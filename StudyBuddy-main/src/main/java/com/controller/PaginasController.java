@@ -1,25 +1,27 @@
 package com.controller;
 
+import java.util.Optional; // Necesario para findById
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.SessionAttributes;
+import org.springframework.web.bind.support.SessionStatus;
+
+import com.model.Carrera;
 // Importamos las clases y repositorios que SÍ existen
 import com.model.GrupoEstudio; // Se llamaba 'Grupo'
 import com.model.Sesion;
 import com.model.Usuario;
-import com.model.Carrera;
-import com.model.Facultad; // Necesario para los dropdowns
+import com.repository.CarreraRepository;
+import com.repository.FacultadRepository;
 import com.service.GrupoService;
 import com.service.SesionService;
 import com.service.UsuarioService;
-import com.repository.CarreraRepository;
-import com.repository.FacultadRepository;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.support.SessionStatus;
-
-import java.util.List;
-import java.util.Optional; // Necesario para findById
 
 @Controller
 @SessionAttributes("usuarioLogueado")
@@ -32,7 +34,7 @@ public class PaginasController {
     private final FacultadRepository facultadRepo;
 
     // --- CAMBIO: Inyección por Constructor (mejor práctica) ---
-    @Autowired
+   
     public PaginasController(GrupoService grupoService, UsuarioService usuarioService, SesionService sesionService, CarreraRepository carreraRepo, FacultadRepository facultadRepo) {
         this.grupoService = grupoService;
         this.usuarioService = usuarioService;

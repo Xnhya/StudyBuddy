@@ -3,7 +3,6 @@ package com.controller;
 import com.model.Recurso;
 import com.model.Usuario;
 import com.service.RecursoService;
-import com.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -23,8 +22,7 @@ public class RecursoController {
     @Autowired
     private RecursoService recursoService;
 
-    @Autowired
-    private UsuarioService usuarioService;
+
 
     @ModelAttribute("usuarioLogueado")
     public Usuario getUsuarioLogueado() {
