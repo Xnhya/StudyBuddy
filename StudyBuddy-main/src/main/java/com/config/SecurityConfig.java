@@ -1,25 +1,32 @@
 package com.config;
 
+import com.service.UsuarioService; // <-- ¡NUEVA IMPORTACIÓN!
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UserDetailsService; // <-- ¡NUEVA IMPORTACIÓN!
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
-/**
- * Configuración de seguridad para Study Buddy
- * Maneja autenticación en memoria y autorización de rutas
- */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    // Inyectaremos el UsuarioService directamente aquí si fuera necesario, 
+    // pero la forma más limpia es proveer el bean de UserDetailsService.
+
+    /**
+     * Define el bean UserDetailsService para que Spring Security use
+     * tu UsuarioService en lugar del usuario auto-generado.
+     */
+    @Bean
+    public UserDetailsService userDetailsService(UsuarioService usuarioService) {
+        // Simplemente devuelve tu servicio que ya implementa UserDetailsService
+        return usuarioService; 
+    }
+    
     /**
      * Configuración del filtro de seguridad HTTP
      */
@@ -27,55 +34,31 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(authz -> authz
+                // Permite acceso a estas rutas públicas
                 .requestMatchers("/", "/landing", "/registrar", "/login", "/test", "/css/**", "/js/**", "/static/**").permitAll()
+                // Cualquier otra ruta requiere autenticación
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
-                .loginPage("/login")
+                .loginPage("/login") 
+                .usernameParameter("email") 
                 .defaultSuccessUrl("/dashboard", true)
                 .permitAll()
             )
             .logout(logout -> logout
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/")
+                .logoutUrl("/logout") 
+                .logoutSuccessUrl("/") 
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID")
                 .permitAll()
             )
-            .csrf(csrf -> csrf.disable()); // Deshabilitado para simplificar la demo
+            .csrf(csrf -> csrf.disable()); 
 
         return http.build();
     }
 
     /**
-     * Servicio de detalles de usuario en memoria
-     * Crea usuarios predefinidos para la demo
-     */
-    @Bean
-    public UserDetailsService userDetailsService() {
-        UserDetails admin = User.builder()
-                .username("admin@studybuddy.com")
-                .password(passwordEncoder().encode("123456"))
-                .roles("ADMIN")
-                .build();
-
-        UserDetails estudiante1 = User.builder()
-                .username("maria@estudiante.com")
-                .password(passwordEncoder().encode("123456"))
-                .roles("USER")
-                .build();
-
-        UserDetails estudiante2 = User.builder()
-                .username("carlos@estudiante.com")
-                .password(passwordEncoder().encode("123456"))
-                .roles("USER")
-                .build();
-
-        return new InMemoryUserDetailsManager(admin, estudiante1, estudiante2);
-    }
-
-    /**
-     * Codificador de contraseñas BCrypt
+     * Define el encriptador de contraseñas (BCrypt)
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
