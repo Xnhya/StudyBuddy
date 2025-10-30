@@ -1,66 +1,67 @@
 package com.service;
 
-import com.model.Grupo;
+import com.model.GrupoEstudio;
+import com.repository.GrupoEstudioRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Servicio para Grupos de Estudio, conectado a MySQL.
+ */
 @Service
+@Transactional(readOnly = true)
 public class GrupoService {
-    private final List<Grupo> grupos = new ArrayList<>();
-    
-    /**
-     * Inicializar grupos de prueba
-     */
-    public GrupoService() {
-        inicializarGruposPrueba();
-    }
-    
-    /**
-     * Inicializar grupos de prueba para la demo
-     */
-    private void inicializarGruposPrueba() {
-        Grupo grupo1 = new Grupo("Estudiantes de Cálculo", "Cálculo", "Tarde", "Grupo para estudiar cálculo diferencial e integral");
-        grupo1.addMiembro("María García");
-        grupos.add(grupo1);
-        
-        Grupo grupo2 = new Grupo("Programadores Java", "Programación", "Noche", "Estudiamos Java y Spring Boot");
-        grupo2.addMiembro("Carlos López");
-        grupo2.addMiembro("María García");
-        grupos.add(grupo2);
-        
-        Grupo grupo3 = new Grupo("Física Cuántica", "Física", "Mañana", "Grupo avanzado de física cuántica");
-        grupo3.addMiembro("María García");
-        grupos.add(grupo3);
+
+    @Autowired
+    private GrupoEstudioRepository grupoRepo;
+
+    // --- MÉTODOS CRUD BÁSICOS ---
+
+    @Transactional
+    public GrupoEstudio agregar(GrupoEstudio grupo) {
+        return grupoRepo.save(grupo);
     }
 
-    public synchronized void add(Grupo g) {
-        // evitar duplicados por nombre (simple)
-        if (buscar(g.getNombre()) == null) {
-            grupos.add(g);
+    public List<GrupoEstudio> listar() {
+        return grupoRepo.findAll();
+    }
+
+    // --- CAMBIO AQUÍ: Long -> Integer ---
+    public GrupoEstudio buscarPorId(Integer id) {
+        if (id == null) return null;
+        return grupoRepo.findById(id).orElse(null);
+    }
+
+    @Transactional
+    public GrupoEstudio actualizar(GrupoEstudio grupo) {
+        // grupo.getId() ahora devuelve Integer, coincide con el repo
+        if (grupo != null && grupo.getId() != null && grupoRepo.existsById(grupo.getId())) {
+            return grupoRepo.save(grupo);
         }
+        return null;
     }
 
-    public synchronized List<Grupo> listar() {
-        return new ArrayList<>(grupos);
-    }
-
-    public synchronized Grupo buscar(String nombre) {
-        if (nombre == null) return null;
-        return grupos.stream()
-                .filter(g -> g.getNombre().equalsIgnoreCase(nombre))
-                .findFirst().orElse(null);
-    }
-
-    public synchronized void unirse(String nombre, String usuario) {
-        Grupo g = buscar(nombre);
-        if (g != null && usuario != null) {
-            g.addMiembro(usuario);
+    // --- CAMBIO AQUÍ: Long -> Integer ---
+    @Transactional
+    public boolean eliminar(Integer id) {
+        if (id != null && grupoRepo.existsById(id)) {
+            grupoRepo.deleteById(id);
+            return true;
         }
+        return false;
     }
 
-    public synchronized void eliminar(String nombre) {
-        grupos.removeIf(g -> g.getNombre().equalsIgnoreCase(nombre));
+    // --- LÓGICA DE NEGOCIO (DTOs) ---
+    // (Añadiremos esto después)
+    /*
+    @Autowired
+    private GrupoEstudioRepository grupoEstudioRepo;
+
+    public List<GrupoListadoDTO> getListaGruposDTO() {
+        return grupoEstudioRepo.findGruposConDetalles();
     }
+    */
 }

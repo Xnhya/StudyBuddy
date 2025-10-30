@@ -1,164 +1,231 @@
 package com.controller;
 
-import com.model.Grupo;
+// Importamos las clases y repositorios que SÍ existen
+import com.model.GrupoEstudio; // Se llamaba 'Grupo'
 import com.model.Sesion;
 import com.model.Usuario;
+import com.model.Carrera;
+import com.model.Facultad; // Necesario para los dropdowns
 import com.service.GrupoService;
 import com.service.SesionService;
 import com.service.UsuarioService;
+import com.repository.CarreraRepository;
+import com.repository.FacultadRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.support.SessionStatus;
 
 import java.util.List;
-
+import java.util.Optional; // Necesario para findById
 
 @Controller
+@SessionAttributes("usuarioLogueado")
 public class PaginasController {
 
-    @Autowired
-    private GrupoService grupoService;
+    private final GrupoService grupoService;
+    private final UsuarioService usuarioService;
+    private final SesionService sesionService;
+    private final CarreraRepository carreraRepo;
+    private final FacultadRepository facultadRepo;
 
+    // --- CAMBIO: Inyección por Constructor (mejor práctica) ---
     @Autowired
-    private UsuarioService usuarioService;
+    public PaginasController(GrupoService grupoService, UsuarioService usuarioService, SesionService sesionService, CarreraRepository carreraRepo, FacultadRepository facultadRepo) {
+        this.grupoService = grupoService;
+        this.usuarioService = usuarioService;
+        this.sesionService = sesionService;
+        this.carreraRepo = carreraRepo;
+        this.facultadRepo = facultadRepo;
+    }
 
-    @Autowired
-    private SesionService sesionService;
+    @ModelAttribute("usuarioLogueado")
+    public Usuario getUsuarioLogueado() {
+        return null; // ¡Perfecto!
+    }
+
+    // --- SIN CAMBIOS: Esta sección de login/logout está 100% correcta ---
 
     @GetMapping({"/", "/landing"})
-    public String landing(Model model) {
+    public String landing(Model model, @ModelAttribute("usuarioLogueado") Usuario usuarioLogueado) {
         model.addAttribute("active", "landing");
-        model.addAttribute("usuario", usuarioService.obtener());
+        model.addAttribute("usuario", usuarioLogueado);
         return "landing";
     }
 
     @GetMapping("/login")
-    public String login(Model model) {
-        model.addAttribute("usuario", usuarioService.obtener());
+    public String login(Model model, @ModelAttribute("usuarioLogueado") Usuario usuarioLogueado) {
+        if (usuarioLogueado != null) {
+            return "redirect:/dashboard";
+        }
         return "login";
     }
 
-    @GetMapping("/test")
-    public String test(Model model) {
-        return "test";
+    @PostMapping("/login")
+    public String procesarLogin(@RequestParam String email, @RequestParam String password, Model model) {
+        Usuario usuario = usuarioService.autenticar(email, password);
+        if (usuario != null) {
+            model.addAttribute("usuarioLogueado", usuario); // ¡Perfecto!
+            return "redirect:/dashboard";
+        }
+        model.addAttribute("error", "Credenciales incorrectas");
+        return "login";
     }
 
+    @GetMapping("/logout")
+    public String logout(SessionStatus status) {
+        status.setComplete(); // ¡Perfecto!
+        return "redirect:/";
+    }
+
+    // --- SECCIÓN DE GRUPOS (CON CAMBIOS) ---
+
     @GetMapping("/buscar")
-    public String buscar(Model model) {
+    public String buscar(Model model, @ModelAttribute("usuarioLogueado") Usuario usuarioLogueado) {
         model.addAttribute("active", "buscar");
-        model.addAttribute("grupos", grupoService.listar());
-        model.addAttribute("usuario", usuarioService.obtener());
+        model.addAttribute("grupos", grupoService.listar()); // Devuelve List<GrupoEstudio>
+        model.addAttribute("usuario", usuarioLogueado);
         return "buscar";
     }
 
     @PostMapping("/buscar/crear")
-    public String crearGrupo(@ModelAttribute Grupo grupo) {
-        grupoService.add(grupo);
+    public String crearGrupo(@ModelAttribute GrupoEstudio grupo, @ModelAttribute("usuarioLogueado") Usuario usuarioLogueado) {
+        if (usuarioLogueado == null) return "redirect:/login"; // Proteger
+        grupo.setCreador(usuarioLogueado); // Asignar el creador
+        grupoService.agregar(grupo);
         return "redirect:/buscar";
     }
 
     @PostMapping("/grupos/unirse")
-    public String unirseGrupo(@RequestParam("nombre") String nombre) {
-        var u = usuarioService.obtener();
-        String nombreUsuario = (u != null && u.getNombre() != null) ? u.getNombre() : "Anónimo";
-        grupoService.unirse(nombre, nombreUsuario);
+    public String unirseGrupo(@RequestParam("idGrupo") Integer idGrupo, @ModelAttribute("usuarioLogueado") Usuario usuarioLogueado) { // --- CAMBIO: Long -> Integer
+        if (usuarioLogueado == null) {
+            return "redirect:/login";
+        }
+
+        // TODO: Implementar lógica de unirse en GrupoService
+        // GrupoEstudio grupo = grupoService.buscarPorId(idGrupo);
+        // Usuario usuario = usuarioService.buscarPorId(usuarioLogueado.getId()); // Cuidado si el ID es Long o Integer
+        // if (grupo != null && usuario != null) {
+        //    grupo.getMiembros().add(usuario);
+        //    grupoService.actualizar(grupo);
+        // }
+
+        System.out.println("Lógica de 'unirse' pendiente de implementar en el servicio.");
+
         return "redirect:/buscar";
     }
 
-    @GetMapping("/grupos/ver/{nombre}")
-    public String verGrupo(@PathVariable String nombre, Model model) {
-        Grupo g = grupoService.buscar(nombre);
+    // --- CAMBIO AQUÍ: Long -> Integer ---
+    @GetMapping("/grupos/ver/{id}")
+    public String verGrupo(@PathVariable Integer id, Model model, @ModelAttribute("usuarioLogueado") Usuario usuarioLogueado) {
+
+        GrupoEstudio g = grupoService.buscarPorId(id); // Ahora coincide
+
         model.addAttribute("grupo", g);
-        model.addAttribute("usuario", usuarioService.obtener());
+        model.addAttribute("usuario", usuarioLogueado);
         model.addAttribute("active", "buscar");
         return "grupo-detalle";
     }
 
+    // --- SECCIÓN DE USUARIO (CON CAMBIOS) ---
+
     @GetMapping("/dashboard")
-    public String dashboard(Model model) {
+    public String dashboard(Model model, @ModelAttribute("usuarioLogueado") Usuario usuarioLogueado) {
+        if (usuarioLogueado == null) {
+            return "redirect:/login";
+        }
         model.addAttribute("active", "dashboard");
         model.addAttribute("grupos", grupoService.listar());
-        model.addAttribute("usuario", usuarioService.obtener());
+        model.addAttribute("usuario", usuarioLogueado);
         return "dashboard";
     }
 
     @GetMapping("/perfil")
-    public String perfil(Model model) {
+    public String perfil(Model model, @ModelAttribute("usuarioLogueado") Usuario usuarioLogueado) {
+        if (usuarioLogueado == null) {
+            return "redirect:/login";
+        }
         model.addAttribute("active", "perfil");
-        // si ya hay usuario, pasar al form para editar; si no, nuevo
-        Usuario u = usuarioService.obtener();
-        model.addAttribute("usuarioForm", u != null ? u : new Usuario());
-        model.addAttribute("usuario", u);
+        // Asegúrate de pasar una copia fresca del usuario para evitar problemas de sesión
+        Usuario usuarioParaForm = usuarioService.buscarPorId(usuarioLogueado.getId());
+        model.addAttribute("usuarioForm", usuarioParaForm != null ? usuarioParaForm : new Usuario());
+        model.addAttribute("usuario", usuarioLogueado);
+        model.addAttribute("facultades", facultadRepo.findAll());
         return "perfil";
     }
 
     @PostMapping("/perfil")
-    public String guardarPerfil(@ModelAttribute("usuarioForm") Usuario usuario,
-                                @RequestParam(value = "materias", required = false) List<String> materias,
-                                @RequestParam(value = "horarios", required = false) List<String> horarios,
-                                @RequestParam(value = "preferenciasEstudio", required = false) List<String> preferencias) {
-        
-        // Obtener usuario actual para mantener ID
-        Usuario usuarioActual = usuarioService.obtener();
-        if (usuarioActual != null) {
-            usuario.setId(usuarioActual.getId());
+    public String guardarPerfil(@ModelAttribute("usuarioForm") Usuario usuarioForm,
+                                @ModelAttribute("usuarioLogueado") Usuario usuarioLogueado,
+                                Model model,
+                                @RequestParam(value = "carreraId", required = false) Integer carreraId) {
+
+        if (usuarioLogueado == null) {
+            return "redirect:/login";
         }
-        
-        // Agregar materias, horarios y preferencias si se proporcionaron
-        if (materias != null) {
-            usuario.setMaterias(materias);
+
+        // Buscar el usuario existente para actualizarlo
+        Usuario usuarioExistente = usuarioService.buscarPorId(usuarioLogueado.getId());
+        if (usuarioExistente == null) {
+            // Manejar error si el usuario no se encuentra
+            return "redirect:/login";
         }
-        if (horarios != null) {
-            usuario.setHorarios(horarios);
+
+        // Actualizar solo los campos permitidos del formulario
+        usuarioExistente.setNombre(usuarioForm.getNombre());
+        usuarioExistente.setApellido(usuarioForm.getApellido());
+        // No actualizamos email ni password aquí por seguridad, debería ser un proceso aparte
+
+        if (carreraId != null) {
+            Optional<Carrera> carreraOpt = carreraRepo.findById(carreraId);
+            carreraOpt.ifPresent(usuarioExistente::setCarrera);
+        } else {
+             usuarioExistente.setCarrera(null); // Permitir quitar la carrera
         }
-        if (preferencias != null) {
-            usuario.setPreferenciasEstudio(preferencias);
-        }
-        
-        usuarioService.guardar(usuario);
+
+        Usuario usuarioActualizado = usuarioService.actualizar(usuarioExistente);
+        model.addAttribute("usuarioLogueado", usuarioActualizado); // Actualizar sesión
+
         return "redirect:/dashboard";
     }
 
     @GetMapping("/registrar")
     public String registrar(Model model) {
         model.addAttribute("usuarioForm", new Usuario());
-        model.addAttribute("active", "perfil");
-        model.addAttribute("usuario", usuarioService.obtener());
-        return "perfil";
+        model.addAttribute("facultades", facultadRepo.findAll());
+        return "perfil"; // Usa la misma vista
     }
 
     @PostMapping("/registrar")
     public String registrarPost(@ModelAttribute("usuarioForm") Usuario usuario,
-                               @RequestParam(value = "materias", required = false) List<String> materias,
-                               @RequestParam(value = "horarios", required = false) List<String> horarios,
-                               @RequestParam(value = "preferenciasEstudio", required = false) List<String> preferencias) {
-        
-        // Agregar materias, horarios y preferencias si se proporcionaron
-        if (materias != null) {
-            usuario.setMaterias(materias);
-        }
-        if (horarios != null) {
-            usuario.setHorarios(horarios);
-        }
-        if (preferencias != null) {
-            usuario.setPreferenciasEstudio(preferencias);
+                                @RequestParam(value = "carreraId", required = false) Integer carreraId,
+                                Model model) {
+
+        if (carreraId != null) {
+            Optional<Carrera> carreraOpt = carreraRepo.findById(carreraId);
+            carreraOpt.ifPresent(usuario::setCarrera);
         }
         
-        usuarioService.guardar(usuario);
+        // ¡IMPORTANTE! Hashear la contraseña antes de guardar
+        // String hashedPassword = passwordEncoder.encode(usuario.getPassword());
+        // usuario.setPassword(hashedPassword);
+        // Por ahora, guardamos la contraseña como viene (inseguro)
+
+        Usuario usuarioGuardado = usuarioService.agregar(usuario);
+        model.addAttribute("usuarioLogueado", usuarioGuardado); // Iniciar sesión
+
         return "redirect:/dashboard";
     }
 
-    @GetMapping("/comenzar")
-    public String comenzar() {
-        return "redirect:/perfil";
-    }
+    // --- SECCIÓN DE SESIONES Y GRÁFICOS (SIN CAMBIOS POR AHORA) ---
 
     @GetMapping("/sesiones")
-    public String sesiones(Model model) {
+    public String sesiones(Model model, @ModelAttribute("usuarioLogueado") Usuario usuarioLogueado) {
         model.addAttribute("active", "sesiones");
         model.addAttribute("sesiones", sesionService.listar());
-        model.addAttribute("usuario", usuarioService.obtener());
+        model.addAttribute("usuario", usuarioLogueado);
         return "sesiones";
     }
 
@@ -169,17 +236,11 @@ public class PaginasController {
     }
 
     @GetMapping("/graficos")
-    public String graficos(Model model) {
+    public String graficos(Model model, @ModelAttribute("usuarioLogueado") Usuario usuarioLogueado) {
         model.addAttribute("active", "graficos");
         model.addAttribute("grupos", grupoService.listar());
         model.addAttribute("usuarios", usuarioService.listar());
-        model.addAttribute("usuario", usuarioService.obtener());
+        model.addAttribute("usuario", usuarioLogueado);
         return "graficos";
-    }
-
-    @GetMapping("/logout")
-    public String logout() {
-        usuarioService.borrar();
-        return "redirect:/";
     }
 }

@@ -1,197 +1,135 @@
 package com.service;
 
 import com.model.Usuario;
+import com.repository.UsuarioRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Optional;
 
 /**
- * Servicio para gestión de usuarios en memoria
+ * Servicio para gestión de usuarios con MySQL
  * Implementa operaciones CRUD para usuarios del sistema
+ * Este servicio es STATELESS (no guarda estado de sesión).
  */
 @Service
+@Transactional(readOnly = true) // Por defecto, todas las búsquedas son de solo lectura
 public class UsuarioService {
-    private final List<Usuario> usuarios = new ArrayList<>();
-    private final AtomicLong idGenerator = new AtomicLong(1);
-    private Usuario usuarioActual; // Usuario logueado actualmente
+    
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    // --- ¡ERROR CORREGIDO! ---
+    // Se elimina 'private Usuario usuarioActual;'
+    // Los servicios no deben guardar estado de sesión.
 
     /**
-     * Inicializar usuarios de prueba
+     * Agregar un nuevo usuario (CREATE)
      */
-    public UsuarioService() {
-        inicializarUsuariosPrueba();
-    }
-
-    /**
-     * Agregar un nuevo usuario
-     */
-    public synchronized Usuario agregar(Usuario usuario) {
+    @Transactional // (Solo este método necesita escribir en la BDD)
+    public Usuario agregar(Usuario usuario) {
         if (usuario != null) {
-            usuario.setId(idGenerator.getAndIncrement());
-            usuarios.add(usuario);
-            return usuario;
+            // .save() hace un INSERT
+            return usuarioRepository.save(usuario);
         }
         return null;
     }
 
     /**
-     * Listar todos los usuarios
+     * Listar todos los usuarios (READ)
      */
-    public synchronized List<Usuario> listar() {
-        return new ArrayList<>(usuarios);
+    public List<Usuario> listar() {
+        return usuarioRepository.findAll();
     }
 
     /**
-     * Buscar usuario por ID
+     * Buscar usuario por ID (READ)
      */
-    public synchronized Usuario buscarPorId(Long id) {
+    public Usuario buscarPorId(Integer id) { // <-- CAMBIO AQUÍ
         if (id == null) return null;
-        return usuarios.stream()
-                .filter(u -> u.getId().equals(id))
-                .findFirst()
-                .orElse(null);
+        Optional<Usuario> usuario = usuarioRepository.findById(id);
+        return usuario.orElse(null);
     }
 
     /**
-     * Buscar usuario por email
+     * Buscar usuario por email (READ)
+     * (Asumiendo que findByEmail en el repo devuelve Optional<Usuario>)
      */
-    public synchronized Usuario buscarPorEmail(String email) {
-        if (email == null || email.trim().isEmpty()) return null;
-        return usuarios.stream()
-                .filter(u -> email.equalsIgnoreCase(u.getEmail()))
-                .findFirst()
-                .orElse(null);
-    }
+    public Usuario buscarPorEmail(String email) {
+    if (email == null || email.trim().isEmpty()) return null;
+    return usuarioRepository.findByEmail(email).orElse(null); // <--- AÑADE ESTO
+}
 
     /**
      * Buscar usuario por nombre
+     * (¡CUIDADO! Esto debe estar en tu UsuarioRepository)
      */
-    public synchronized Usuario buscarPorNombre(String nombre) {
+    public Usuario buscarPorNombre(String nombre) {
         if (nombre == null || nombre.trim().isEmpty()) return null;
-        return usuarios.stream()
-                .filter(u -> nombre.equalsIgnoreCase(u.getNombre()))
-                .findFirst()
-                .orElse(null);
+        // Esto asumirá que tienes 'Optional<Usuario> findByNombre(String nombre);' 
+        // en tu interfazo UsuarioRepository. Si no, debes añadirlo.
+        return usuarioRepository.findByNombre(nombre).orElse(null);
     }
 
     /**
-     * Actualizar un usuario existente
+     * Actualizar un usuario existente (UPDATE)
      */
-    public synchronized Usuario actualizar(Usuario usuario) {
+    @Transactional // (Este método también escribe en la BDD)
+    public Usuario actualizar(Usuario usuario) {
         if (usuario != null && usuario.getId() != null) {
-            for (int i = 0; i < usuarios.size(); i++) {
-                if (usuarios.get(i).getId().equals(usuario.getId())) {
-                    usuarios.set(i, usuario);
-                    return usuario;
-                }
+            if (usuarioRepository.existsById(usuario.getId())) {
+                // .save() hace un UPDATE si el ID ya existe
+                return usuarioRepository.save(usuario);
             }
         }
         return null;
     }
 
     /**
-     * Eliminar usuario por ID
+     * Eliminar usuario por ID (DELETE)
      */
-    public synchronized boolean eliminar(Long id) {
+    @Transactional // (Este método también escribe en la BDD)
+    public boolean eliminar(Integer id) { // <-- CAMBIO AQUÍ
         if (id == null) return false;
-        return usuarios.removeIf(u -> u.getId().equals(id));
+        if (usuarioRepository.existsById(id)) {
+            usuarioRepository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 
     /**
      * Autenticar usuario (login)
+     * ¡CORREGIDO! Ya no guarda 'usuarioActual'.
      */
-    public synchronized Usuario autenticar(String email, String password) {
-        Usuario usuario = buscarPorEmail(email);
+    public Usuario autenticar(String email, String password) {
+        Usuario usuario = this.buscarPorEmail(email);
+        
+        // ADVERTENCIA DE SEGURIDAD:
+        // NUNCA compares contraseñas en texto plano.
+        // Debes usar Spring Security con un PasswordEncoder (BCrypt).
         if (usuario != null && password != null && password.equals(usuario.getPassword())) {
-            this.usuarioActual = usuario;
+            // ¡Login exitoso! Simplemente devuelve el usuario.
             return usuario;
         }
+        // Falló el login
         return null;
     }
 
-    /**
-     * Obtener usuario actual (logueado)
-     */
-    public Usuario obtener() {
-        return this.usuarioActual;
-    }
-
-    /**
-     * Guardar usuario actual (para compatibilidad con código existente)
-     */
-    public void guardar(Usuario usuario) {
-        if (usuario != null) {
-            if (usuario.getId() == null) {
-                agregar(usuario);
-            } else {
-                actualizar(usuario);
-            }
-            this.usuarioActual = usuario;
-        }
-    }
-
-    /**
-     * Cerrar sesión (logout)
-     */
-    public void borrar() {
-        this.usuarioActual = null;
-    }
-
-    /**
-     * Buscar usuarios por materia
-     */
-    public synchronized List<Usuario> buscarPorMateria(String materia) {
-        if (materia == null || materia.trim().isEmpty()) return new ArrayList<>();
-        return usuarios.stream()
-                .filter(u -> u.getMaterias() != null && u.getMaterias().contains(materia))
-                .toList();
-    }
-
-    /**
-     * Buscar usuarios por horario
-     */
-    public synchronized List<Usuario> buscarPorHorario(String horario) {
-        if (horario == null || horario.trim().isEmpty()) return new ArrayList<>();
-        return usuarios.stream()
-                .filter(u -> u.getHorarios() != null && u.getHorarios().contains(horario))
-                .toList();
-    }
-
-    /**
-     * Buscar usuarios por preferencia de estudio
-     */
-    public synchronized List<Usuario> buscarPorPreferencia(String preferencia) {
-        if (preferencia == null || preferencia.trim().isEmpty()) return new ArrayList<>();
-        return usuarios.stream()
-                .filter(u -> u.getPreferenciasEstudio() != null && u.getPreferenciasEstudio().contains(preferencia))
-                .toList();
-    }
-
-    /**
-     * Inicializar usuarios de prueba para la demo
-     */
-    private void inicializarUsuariosPrueba() {
-        Usuario admin = new Usuario("Admin", "admin@studybuddy.com", "123456");
-        admin.agregarMateria("Matemáticas");
-        admin.agregarMateria("Programación");
-        admin.agregarHorario("Mañana");
-        admin.agregarPreferencia("Silencio");
-        agregar(admin);
-
-        Usuario estudiante1 = new Usuario("María García", "maria@estudiante.com", "123456");
-        estudiante1.agregarMateria("Cálculo");
-        estudiante1.agregarMateria("Física");
-        estudiante1.agregarHorario("Tarde");
-        estudiante1.agregarPreferencia("Música");
-        agregar(estudiante1);
-
-        Usuario estudiante2 = new Usuario("Carlos López", "carlos@estudiante.com", "123456");
-        estudiante2.agregarMateria("Programación");
-        estudiante2.agregarMateria("Base de Datos");
-        estudiante2.agregarHorario("Noche");
-        estudiante2.agregarPreferencia("Gamificación");
-        agregar(estudiante2);
-    }
+    // --- ¡MÉTODOS OBSOLETOS ELIMINADOS! ---
+    //
+    // Se eliminan 'obtener()', 'guardar()' y 'borrar()' porque
+    // el manejo de la sesión (usuario logueado) se hace
+    // en la capa del Controlador (Controller) con @SessionAttributes
+    // o (mejor aún) con Spring Security.
+    //
+    // Se elimina 'inicializarUsuariosPrueba()'. Los datos de prueba
+    // deben estar en tu script 'studyBuddy.sql' o en un archivo 'data.sql'
+    // en la carpeta 'resources'.
+    //
+    // Se eliminan 'buscarPorMateria()', 'buscarPorHorario()' y 'buscarPorPreferencia()'.
+    // Esta lógica ya no es válida.
+    // La reemplazaremos con DTOs y JOINS, como pide tu rúbrica.
 }

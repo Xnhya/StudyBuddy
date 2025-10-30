@@ -17,6 +17,7 @@ import java.util.List;
  */
 @Controller
 @RequestMapping("/recursos")
+@SessionAttributes("usuarioLogueado")
 public class RecursoController {
 
     @Autowired
@@ -25,13 +26,19 @@ public class RecursoController {
     @Autowired
     private UsuarioService usuarioService;
 
+    @ModelAttribute("usuarioLogueado")
+    public Usuario getUsuarioLogueado() {
+        return null;
+    }
+
     /**
      * Listar todos los recursos
      */
     @GetMapping
-    public String listarRecursos(Model model) {
+    public String listarRecursos(Model model, @ModelAttribute("usuarioLogueado") Usuario usuarioLogueado) {
         model.addAttribute("recursos", recursoService.listar());
-        model.addAttribute("usuario", usuarioService.obtener());
+        // Pasamos el usuario de la sesión a la vista
+        model.addAttribute("usuario", usuarioLogueado);
         model.addAttribute("active", "recursos");
         return "recursos";
     }
@@ -40,14 +47,14 @@ public class RecursoController {
      * Mostrar formulario para crear nuevo recurso
      */
     @GetMapping("/crear")
-    public String mostrarFormularioCrear(@RequestParam(required = false) Long grupoId, Model model) {
+    public String mostrarFormularioCrear(@RequestParam(required = false) Long grupoId, Model model, @ModelAttribute("usuarioLogueado") Usuario usuarioLogueado) {
         Recurso recurso = new Recurso();
         if (grupoId != null) {
             recurso.setGrupoId(grupoId);
         }
         
         model.addAttribute("recurso", recurso);
-        model.addAttribute("usuario", usuarioService.obtener());
+        model.addAttribute("usuario", usuarioLogueado);
         model.addAttribute("tiposRecurso", List.of("DOCUMENTO", "ENLACE", "VIDEO", "IMAGEN", "AUDIO"));
         return "recurso-form";
     }
@@ -56,10 +63,12 @@ public class RecursoController {
      * Crear nuevo recurso
      */
     @PostMapping("/crear")
-    public String crearRecurso(@ModelAttribute Recurso recurso, Model model) {
-        Usuario usuarioActual = usuarioService.obtener();
-        if (usuarioActual != null) {
-            recurso.setAutor(usuarioActual.getNombre());
+    public String crearRecurso(@ModelAttribute Recurso recurso, @ModelAttribute("usuarioLogueado") Usuario usuarioLogueado) {
+        if (usuarioLogueado == null) {
+            return "redirect:/login"; // Proteger: solo usuarios logueados pueden crear
+        }
+        if (usuarioLogueado != null) {
+            recurso.setAutor(usuarioLogueado.getNombre());
         }
         
         recursoService.agregar(recurso);
@@ -70,14 +79,14 @@ public class RecursoController {
      * Ver detalles de un recurso
      */
     @GetMapping("/{id}")
-    public String verRecurso(@PathVariable Long id, Model model) {
+    public String verRecurso(@PathVariable Long id, Model model, @ModelAttribute("usuarioLogueado") Usuario usuarioLogueado) {
         Recurso recurso = recursoService.buscarPorId(id);
         if (recurso == null) {
             return "redirect:/recursos";
         }
         
         model.addAttribute("recurso", recurso);
-        model.addAttribute("usuario", usuarioService.obtener());
+        model.addAttribute("usuario", usuarioLogueado);
         return "recurso-detalle";
     }
 
@@ -85,14 +94,14 @@ public class RecursoController {
      * Mostrar formulario para editar recurso
      */
     @GetMapping("/{id}/editar")
-    public String mostrarFormularioEditar(@PathVariable Long id, Model model) {
+    public String mostrarFormularioEditar(@PathVariable Long id, Model model, @ModelAttribute("usuarioLogueado") Usuario usuarioLogueado) {
         Recurso recurso = recursoService.buscarPorId(id);
         if (recurso == null) {
             return "redirect:/recursos";
         }
         
         model.addAttribute("recurso", recurso);
-        model.addAttribute("usuario", usuarioService.obtener());
+        model.addAttribute("usuario", usuarioLogueado);
         model.addAttribute("tiposRecurso", List.of("DOCUMENTO", "ENLACE", "VIDEO", "IMAGEN", "AUDIO"));
         return "recurso-form";
     }
@@ -120,7 +129,7 @@ public class RecursoController {
      * Buscar recursos por tipo
      */
     @GetMapping("/buscar")
-    public String buscarRecursos(@RequestParam(required = false) String tipo, Model model) {
+    public String buscarRecursos(@RequestParam(required = false) String tipo, Model model, @ModelAttribute("usuarioLogueado") Usuario usuarioLogueado) {
         List<Recurso> recursos;
         if (tipo != null && !tipo.trim().isEmpty()) {
             recursos = recursoService.buscarPorTipo(tipo);
@@ -129,7 +138,7 @@ public class RecursoController {
         }
         
         model.addAttribute("recursos", recursos);
-        model.addAttribute("usuario", usuarioService.obtener());
+        model.addAttribute("usuario", usuarioLogueado);
         model.addAttribute("tipoSeleccionado", tipo);
         model.addAttribute("tiposRecurso", List.of("DOCUMENTO", "ENLACE", "VIDEO", "IMAGEN", "AUDIO"));
         return "recursos";
@@ -139,9 +148,9 @@ public class RecursoController {
      * Buscar recursos por autor
      */
     @GetMapping("/autor/{autor}")
-    public String buscarPorAutor(@PathVariable String autor, Model model) {
+    public String buscarPorAutor(@PathVariable String autor, Model model, @ModelAttribute("usuarioLogueado") Usuario usuarioLogueado) {
         model.addAttribute("recursos", recursoService.buscarPorAutor(autor));
-        model.addAttribute("usuario", usuarioService.obtener());
+        model.addAttribute("usuario", usuarioLogueado);
         model.addAttribute("autorSeleccionado", autor);
         return "recursos";
     }
