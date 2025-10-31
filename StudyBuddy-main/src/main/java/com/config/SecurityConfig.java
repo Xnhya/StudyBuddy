@@ -34,8 +34,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(authz -> authz
-                // Permite acceso a estas rutas públicas
-                .requestMatchers("/", "/landing", "/registrar", "/login", "/test", "/css/**", "/js/**", "/static/**").permitAll()
+                .requestMatchers("/", "/landing", "/registrar", "/login", "/api/**", "/css/**", "/js/**", "/static/**").permitAll()
                 // Cualquier otra ruta requiere autenticación
                 .anyRequest().authenticated()
             )

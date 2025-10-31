@@ -1,7 +1,8 @@
 package com.controller;
 
 import java.security.Principal; // <-- ¡CAMBIO! Importar Principal
-import java.util.Optional; 
+import java.util.Optional;
+import java.util.List;
 
 import org.springframework.security.crypto.password.PasswordEncoder; // <-- ¡CAMBIO! Importar
 import org.springframework.stereotype.Controller;
@@ -35,8 +36,8 @@ public class PaginasController {
     private final PasswordEncoder passwordEncoder; // <-- ¡CAMBIO!
 
     // --- ¡CAMBIO! Inyectamos PasswordEncoder ---
-    public PaginasController(GrupoService grupoService, UsuarioService usuarioService, SesionService sesionService, 
-                             CarreraRepository carreraRepo, FacultadRepository facultadRepo, PasswordEncoder passwordEncoder) {
+    public PaginasController(GrupoService grupoService, UsuarioService usuarioService, SesionService sesionService,
+            CarreraRepository carreraRepo, FacultadRepository facultadRepo, PasswordEncoder passwordEncoder) {
         this.grupoService = grupoService;
         this.usuarioService = usuarioService;
         this.sesionService = sesionService;
@@ -59,10 +60,9 @@ public class PaginasController {
 
     // --- ¡CAMBIO! Se elimina @ModelAttribute("usuarioLogueado") ---
 
-
     // --- LOGIN / LOGOUT (CORREGIDOS) ---
 
-    @GetMapping({"/", "/landing"})
+    @GetMapping({ "/", "/landing" })
     public String landing(Model model, Principal principal) { // <-- ¡CAMBIO!
         model.addAttribute("active", "landing");
         model.addAttribute("usuario", getUsuarioActual(principal)); // <-- ¡CAMBIO!
@@ -90,7 +90,8 @@ public class PaginasController {
     public String buscar(Model model, Principal principal) { // <-- ¡CAMBIO!
         Usuario usuarioLogueado = getUsuarioActual(principal);
         // Spring Security ya protege esta ruta, pero es buena práctica verificar
-        if (usuarioLogueado == null) return "redirect:/login"; 
+        if (usuarioLogueado == null)
+            return "redirect:/login";
 
         model.addAttribute("active", "buscar");
         model.addAttribute("grupos", grupoService.listar());
@@ -101,9 +102,10 @@ public class PaginasController {
     @PostMapping("/buscar/crear")
     public String crearGrupo(@ModelAttribute GrupoEstudio grupo, Principal principal) { // <-- ¡CAMBIO!
         Usuario usuarioLogueado = getUsuarioActual(principal);
-        if (usuarioLogueado == null) return "redirect:/login"; 
-        
-        grupo.setCreador(usuarioLogueado); 
+        if (usuarioLogueado == null)
+            return "redirect:/login";
+
+        grupo.setCreador(usuarioLogueado);
         grupoService.agregar(grupo);
         return "redirect:/buscar";
     }
@@ -121,7 +123,8 @@ public class PaginasController {
     @GetMapping("/grupos/ver/{id}")
     public String verGrupo(@PathVariable Integer id, Model model, Principal principal) { // <-- ¡CAMBIO!
         Usuario usuarioLogueado = getUsuarioActual(principal);
-        if (usuarioLogueado == null) return "redirect:/login";
+        if (usuarioLogueado == null)
+            return "redirect:/login";
 
         GrupoEstudio g = grupoService.buscarPorId(id);
         model.addAttribute("grupo", g);
@@ -161,8 +164,8 @@ public class PaginasController {
 
     @PostMapping("/perfil")
     public String guardarPerfil(@ModelAttribute("usuarioForm") Usuario usuarioForm,
-                                Principal principal, // <-- ¡CAMBIO!
-                                @RequestParam(value = "carreraId", required = false) Integer carreraId) {
+            Principal principal, // <-- ¡CAMBIO!
+            @RequestParam(value = "carreraId", required = false) Integer carreraId) {
 
         Usuario usuarioLogueado = getUsuarioActual(principal);
         if (usuarioLogueado == null) {
@@ -176,7 +179,8 @@ public class PaginasController {
 
         usuarioExistente.setNombre(usuarioForm.getNombre());
         usuarioExistente.setApellido(usuarioForm.getApellido());
-        usuarioExistente.setEmail(usuarioForm.getEmail()); // Asegúrate de que esto sea correcto (¿se puede cambiar email?)
+        usuarioExistente.setEmail(usuarioForm.getEmail()); // Asegúrate de que esto sea correcto (¿se puede cambiar
+                                                           // email?)
 
         // --- ¡CAMBIO IMPORTANTE! Encriptar password SÓLO si se cambió ---
         if (usuarioForm.getPassword() != null && !usuarioForm.getPassword().trim().isEmpty()) {
@@ -187,7 +191,7 @@ public class PaginasController {
             Optional<Carrera> carreraOpt = carreraRepo.findById(carreraId);
             carreraOpt.ifPresent(usuarioExistente::setCarrera);
         } else {
-             usuarioExistente.setCarrera(null);
+            usuarioExistente.setCarrera(null);
         }
 
         usuarioService.actualizar(usuarioExistente);
@@ -202,29 +206,38 @@ public class PaginasController {
         }
         model.addAttribute("usuarioForm", new Usuario());
         model.addAttribute("facultades", facultadRepo.findAll());
-        // El controller original apuntaba a 'perfil', pero el archivo es 'register.html'
+        // El controller original apuntaba a 'perfil', pero el archivo es
+        // 'register.html'
         return "register"; // <-- Corregido
     }
 
     @PostMapping("/registrar")
     public String registrarPost(@ModelAttribute("usuarioForm") Usuario usuario,
-                                @RequestParam(value = "carreraId", required = false) Integer carreraId,
-                                Model model) {
+            @RequestParam(value = "carreraId", required = false) Integer carreraId,
+            @RequestParam(value = "preferencias", required = false) List<String> preferencias, // <-- AÑADIDO
+            Model model) {
 
         if (carreraId != null) {
             Optional<Carrera> carreraOpt = carreraRepo.findById(carreraId);
             carreraOpt.ifPresent(usuario::setCarrera);
         }
-        
-        // --- ¡CAMBIO IMPORTANTE! Hashear la contraseña ANTES de guardar ---
+
+        // --- LÓGICA DE PREFERENCIAS (AÑADIDO) ---
+        // Convierte la lista de preferencias (ej. ["MUSICA", "SILENCIO"])
+        // en un solo String (ej. "MUSICA,SILENCIO") para la BDD.
+        if (preferencias != null && !preferencias.isEmpty()) {
+            String preferenciasString = String.join(",", preferencias);
+            usuario.setPreferencias(preferenciasString);
+        }
+        // --- FIN LÓGICA PREFERENCIAS ---
+
+        // Hashear la contraseña (código existente)
         String hashedPassword = passwordEncoder.encode(usuario.getPassword());
         usuario.setPassword(hashedPassword);
 
         usuarioService.agregar(usuario);
-        
-        // No iniciamos sesión automáticamente.
-        // Redirigimos al login para que ingrese con sus credenciales.
-        return "redirect:/login"; // Puedes añadir ?registro=exitoso si quieres
+
+        return "redirect:/login";
     }
 
     // --- SECCIÓN DE SESIONES Y GRÁFICOS (CON CAMBIOS) ---
@@ -232,8 +245,9 @@ public class PaginasController {
     @GetMapping("/sesiones")
     public String sesiones(Model model, Principal principal) { // <-- ¡CAMBIO!
         Usuario usuarioLogueado = getUsuarioActual(principal);
-        if (usuarioLogueado == null) return "redirect:/login";
-        
+        if (usuarioLogueado == null)
+            return "redirect:/login";
+
         model.addAttribute("active", "sesiones");
         model.addAttribute("sesiones", sesionService.listar());
         model.addAttribute("usuario", usuarioLogueado);
@@ -242,7 +256,8 @@ public class PaginasController {
 
     @PostMapping("/sesiones/crear")
     public String crearSesion(@ModelAttribute Sesion s, Principal principal) { // <-- ¡CAMBIO!
-        if (principal == null) return "redirect:/login"; // Proteger
+        if (principal == null)
+            return "redirect:/login"; // Proteger
         sesionService.add(s);
         return "redirect:/sesiones";
     }
@@ -250,7 +265,8 @@ public class PaginasController {
     @GetMapping("/graficos")
     public String graficos(Model model, Principal principal) { // <-- ¡CAMBIO!
         Usuario usuarioLogueado = getUsuarioActual(principal);
-        if (usuarioLogueado == null) return "redirect:/login";
+        if (usuarioLogueado == null)
+            return "redirect:/login";
 
         model.addAttribute("active", "graficos");
         model.addAttribute("grupos", grupoService.listar());
