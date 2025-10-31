@@ -94,7 +94,7 @@ public class PaginasController {
             return "redirect:/login";
 
         model.addAttribute("active", "buscar");
-        model.addAttribute("grupos", grupoService.listar());
+        model.addAttribute("grupos", grupoService.listarDTO());
         model.addAttribute("usuario", usuarioLogueado);
         return "buscar";
     }
@@ -132,6 +132,37 @@ public class PaginasController {
         model.addAttribute("active", "buscar");
         // Tu HTML se llama 'grupo-detalles.html', no 'grupo-detalle'
         return "grupo-detalles"; // <-- Corregido
+    }
+
+    // --- EDITAR / ELIMINAR GRUPO ---
+    @GetMapping("/grupos/{id}/editar")
+    public String editarGrupo(@PathVariable Integer id, Model model, Principal principal) {
+        Usuario usuarioLogueado = getUsuarioActual(principal);
+        if (usuarioLogueado == null) return "redirect:/login";
+        GrupoEstudio grupo = grupoService.buscarPorId(id);
+        if (grupo == null) return "redirect:/buscar";
+        model.addAttribute("grupo", grupo);
+        model.addAttribute("usuario", usuarioLogueado);
+        return "grupo-form";
+    }
+
+    @PostMapping("/grupos/{id}/editar")
+    public String actualizarGrupo(@PathVariable Integer id, @ModelAttribute GrupoEstudio grupo, Principal principal) {
+        Usuario usuarioLogueado = getUsuarioActual(principal);
+        if (usuarioLogueado == null) return "redirect:/login";
+        GrupoEstudio existente = grupoService.buscarPorId(id);
+        if (existente == null) return "redirect:/buscar";
+        existente.setNombre(grupo.getNombre());
+        existente.setDescripcion(grupo.getDescripcion());
+        grupoService.actualizar(existente);
+        return "redirect:/grupos/ver/" + id;
+    }
+
+    @PostMapping("/grupos/{id}/eliminar")
+    public String eliminarGrupo(@PathVariable Integer id, Principal principal) {
+        if (getUsuarioActual(principal) == null) return "redirect:/login";
+        grupoService.eliminar(id);
+        return "redirect:/buscar";
     }
 
     // --- SECCIÓN DE USUARIO (CON CAMBIOS) ---
@@ -259,6 +290,38 @@ public class PaginasController {
         if (principal == null)
             return "redirect:/login"; // Proteger
         sesionService.add(s);
+        return "redirect:/sesiones";
+    }
+
+    // --- EDITAR / ELIMINAR SESIÓN ---
+    @GetMapping("/sesiones/{id}/editar")
+    public String editarSesion(@PathVariable Integer id, Model model, Principal principal) {
+        Usuario usuarioLogueado = getUsuarioActual(principal);
+        if (usuarioLogueado == null) return "redirect:/login";
+        Sesion sesion = sesionService.buscarPorId(id);
+        if (sesion == null) return "redirect:/sesiones";
+        model.addAttribute("sesion", sesion);
+        model.addAttribute("usuario", usuarioLogueado);
+        return "sesion-form";
+    }
+
+    @PostMapping("/sesiones/{id}/editar")
+    public String actualizarSesion(@PathVariable Integer id, @ModelAttribute Sesion s, Principal principal) {
+        if (getUsuarioActual(principal) == null) return "redirect:/login";
+        Sesion existente = sesionService.buscarPorId(id);
+        if (existente == null) return "redirect:/sesiones";
+        existente.setTema(s.getTema());
+        existente.setFecha(s.getFecha());
+        existente.setHora(s.getHora());
+        existente.setDescripcion(s.getDescripcion());
+        sesionService.actualizar(existente);
+        return "redirect:/sesiones";
+    }
+
+    @PostMapping("/sesiones/{id}/eliminar")
+    public String eliminarSesion(@PathVariable Integer id, Principal principal) {
+        if (getUsuarioActual(principal) == null) return "redirect:/login";
+        sesionService.eliminar(id);
         return "redirect:/sesiones";
     }
 

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import com.dto.GrupoListadoDTO;
 
 /**
  * Servicio para Grupos de Estudio, conectado a MySQL.
@@ -55,13 +56,7 @@ public class GrupoService {
     }
 
     // --- LÓGICA DE NEGOCIO (DTOs) ---
-    // (Añadiremos esto después)
-    /*
-    @Autowired
-    private GrupoEstudioRepository grupoEstudioRepo;
-
-    public List<GrupoListadoDTO> getListaGruposDTO() {
-        return grupoEstudioRepo.findGruposConDetalles();
+    public List<GrupoListadoDTO> listarDTO() {
+        return grupoRepo.findGruposConDetalles();
     }
-    */
 }

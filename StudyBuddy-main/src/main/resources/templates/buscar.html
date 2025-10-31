@@ -42,18 +42,24 @@
       <div class="col-md-4" th:each="g : ${grupos}">
         <div class="card h-100">
           <div class="card-body d-flex flex-column">
-            <h5 class="card-title" th:text="${g.nombre}">Nombre</h5>
-            <p class="card-text mb-1" th:text="${g.materia}">Materia</p>
-            <p class="card-text small text-muted mb-2" th:text="${g.horario}">Horario</p>
-            <p class="card-text mb-3"><strong>Miembros:</strong> <span th:text="${g.miembros}">0</span></p>
+            <h5 class="card-title" th:text="${g.nombreGrupo}">Nombre</h5>
+            <p class="card-text mb-1"><strong>Materia:</strong> <span th:text="${g.nombreMateria}">Materia</span></p>
+            <p class="card-text small text-muted mb-2"><strong>Creador:</strong> <span th:text="${g.nombreCreador}">Creador</span></p>
 
             <div class="mt-auto">
               <form th:action="@{/grupos/unirse}" method="post" class="d-inline">
-                <input type="hidden" name="nombre" th:value="${g.nombre}" />
+                <input type="hidden" name="idGrupo" th:value="${g.idGrupo}" />
                 <button type="submit" class="btn btn-outline-primary">Unirse</button>
               </form>
 
-              <a th:href="@{|/grupos/ver/${g.nombre}|}" class="btn btn-link">Ver</a>
+              <a th:href="@{|/grupos/ver/${g.idGrupo}|}" class="btn btn-link">Ver</a>
+
+              <span th:if="${usuario != null and usuario.id == g.idCreador}">
+                <a th:href="@{|/grupos/${g.idGrupo}/editar|}" class="btn btn-sm btn-warning ms-2">Editar</a>
+                <form th:action="@{|/grupos/${g.idGrupo}/eliminar|}" method="post" class="d-inline ms-1" onsubmit="return confirm('¿Eliminar grupo?');">
+                  <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                </form>
+              </span>
             </div>
           </div>
         </div>
