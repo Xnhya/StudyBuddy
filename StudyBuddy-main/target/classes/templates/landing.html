@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>StudyBuddy - Encuentra tu compañero de estudio</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+  <style>
+    /* Estilos tomados y adaptados desde tu Word */
+    body { scroll-behavior: smooth; padding-top: 80px; font-family: 'Segoe UI', sans-serif; }
+    .hero { background-color: #0d6efd; color: white; padding: 100px 0; text-align: center; }
+    .beneficios .card { transition: transform 0.3s; }
+    .beneficios .card:hover { transform: scale(1.05); }
+    .pasos .icono { font-size: 40px; color: #0d6efd; }
+    .testimonios img { border-radius: 50%; width: 80px; height: 80px; object-fit: cover; }
+    footer { background-color: #f8f9fa; padding: 40px 0; }
+    .carousel-item p { max-width: 700px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR (versión del Word, adaptada a Thymeleaf y a la lógica del usuario) -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
+    <div class="container">
+      <a class="navbar-brand fw-bold text-primary" th:href="@{/}">StudyBuddy</a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu" aria-controls="navMenu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navMenu">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" th:href="@{/buscar}">Buscar</a></li>
+          <li class="nav-item"><a class="nav-link" th:href="@{/graficos}">Gráficos</a></li>
+          <li class="nav-item"><a class="nav-link" th:href="@{/perfil}">Perfil</a></li>
+        </ul>
+
+        <div class="d-flex align-items-center ms-3">
+          <!-- Si hay usuario mostrado, mostrar nombre y logout -->
+          <div th:if="${usuario != null and usuario.nombre != null and usuario.nombre != ''}" class="me-3">
+            <small class="text-secondary" th:text="${usuario.nombre}">Usuario</small>
+          </div>
+
+          <!-- Botones separados para login y registro -->
+          <div th:if="${usuario == null}" class="d-flex gap-2">
+            <a class="btn btn-outline-primary" th:href="@{/login}">Iniciar Sesión</a>
+            <a class="btn btn-primary" th:href="@{/registrar}">Registrarse</a>
+          </div>
+          <a th:if="${usuario != null}" class="btn btn-outline-secondary ms-3" th:href="@{/logout}">Cerrar sesión</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section (texto e idea del Word) -->
+  <section class="hero" id="hero">
+    <div class="container">
+      <h1 class="display-4 fw-bold">Encuentra tu compañero de estudio ideal</h1>
+      <p class="lead">Conecta con estudiantes compatibles, forma grupos efectivos y mejora tus notas.</p>
+      <div class="mt-4">
+        <!-- Si ya estás logeado, botón al dashboard -->
+        <div th:if="${usuario != null and usuario.nombre != null and usuario.nombre != ''}">
+          <a th:href="@{/dashboard}" class="btn btn-light btn-lg me-2">
+            <i class="fas fa-tachometer-alt me-2"></i>Ir al Dashboard
+          </a>
+        </div>
+        
+        <!-- Si no estás logeado, mostrar opciones claras -->
+        <div th:if="${usuario == null}" class="d-flex flex-column flex-md-row gap-3 justify-content-center">
+          <a th:href="@{/login}" class="btn btn-light btn-lg">
+            <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión
+          </a>
+          <a th:href="@{/registrar}" class="btn btn-outline-light btn-lg">
+            <i class="fas fa-user-plus me-2"></i>Registrarme
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Beneficios (texto del Word) -->
+  <section class="beneficios py-5" id="beneficios">
+    <div class="container text-center">
+      <h2 class="mb-4">Beneficios de usar StudyBuddy</h2>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">👥 Encuentra Compañeros</h5>
+              <p class="card-text">Conecta con estudiantes que cursan las mismas materias y tienen horarios compatibles.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">📈 Mejora tus Notas</h5>
+              <p class="card-text">Estudiar en grupo te ayuda a comprender mejor los temas y mantenerte al día.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">💪 Mantente Motivado</h5>
+              <p class="card-text">La constancia es más fácil cuando estudias con otros que comparten tus metas.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cómo Funciona (pasos) -->
+  <section class="pasos py-5 bg-light" id="funciona">
+    <div class="container text-center">
+      <h2 class="mb-4">¿Cómo Funciona?</h2>
+      <div class="row g-4">
+        <div class="col-md-3">
+          <div class="icono mb-2">📝</div>
+          <h5>1. Crea tu perfil</h5>
+          <p>Registra tus materias, horarios y preferencias de estudio.</p>
+        </div>
+
+        <div class="col-md-3">
+          <div class="icono mb-2">🔍</div>
+          <h5>2. Encuentra grupos</h5>
+          <p>El sistema te sugiere grupos compatibles automáticamente.</p>
+        </div>
+
+        <div class="col-md-3">
+          <div class="icono mb-2">📅</div>
+          <h5>3. Programa sesiones</h5>
+          <p>Organiza encuentros virtuales o presenciales con tu grupo.</p>
+        </div>
+
+        <div class="col-md-3">
+          <div class="icono mb-2">💬</div>
+          <h5>4. Chatea y comparte</h5>
+          <p>Intercambia recursos y mantente en contacto con tu equipo.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonios (copia de tu Word, carousel Bootstrap) -->
+  <section class="testimonios py-5" id="testimonios">
+    <div class="container text-center">
+      <h2 class="mb-4">Lo que dicen nuestros usuarios</h2>
+
+      <div id="carouselTestimonios" class="carousel slide" data-bs-ride="carousel">
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Estudiante 1" class="mb-3">
+            <p class="mb-0">“Gracias a StudyBuddy encontré un grupo increíble para estudiar cálculo. ¡Mis notas subieron muchísimo!”<br><strong>- Mariana, Ingeniería</strong></p>
+          </div>
+
+          <div class="carousel-item">
+            <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Estudiante 2" class="mb-3">
+            <p class="mb-0">“Estudiar solo era difícil. Ahora tengo compañeros que me motivan y me ayudan a entender mejor.”<br><strong>- Luis, Medicina</strong></p>
+          </div>
+
+          <div class="carousel-item">
+            <img src="https://randomuser.me/api/portraits/women/65.jpg" alt="Estudiante 3" class="mb-3">
+            <p class="mb-0">“La plataforma es súper fácil de usar. Me encanta poder organizar sesiones desde el celular.”<br><strong>- Camila, Derecho</strong></p>
+          </div>
+        </div>
+
+        <button class="carousel-control-prev" type="button" data-bs-target="#carouselTestimonios" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#carouselTestimonios" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Final -->
+  <section class="py-5 text-center bg-primary text-white">
+    <div class="container">
+      <h2 class="mb-3">¿Listo para mejorar tu forma de estudiar?</h2>
+
+      <!-- Si hay usuario ir al dashboard -->
+      <div th:if="${usuario != null and usuario.nombre != null and usuario.nombre != ''}">
+        <a th:href="@{/dashboard}" class="btn btn-light btn-lg">
+          <i class="fas fa-tachometer-alt me-2"></i>Ir al Dashboard
+        </a>
+      </div>
+      
+      <!-- Si no hay usuario, mostrar opciones -->
+      <div th:if="${usuario == null}" class="d-flex flex-column flex-md-row gap-3 justify-content-center">
+        <a th:href="@{/login}" class="btn btn-light btn-lg">
+          <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión
+        </a>
+        <a th:href="@{/registrar}" class="btn btn-outline-light btn-lg">
+          <i class="fas fa-user-plus me-2"></i>Únete a StudyBuddy
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer (texto e iconos del Word) -->
+  <footer>
+    <div class="container text-center">
+      <p class="mb-2">© 2025 StudyBuddy. Todos los derechos reservados.</p>
+      <div>
+        <a href="https://instagram.com" class="me-3 text-secondary" target="_blank">Instagram</a>
+        <a href="https://facebook.com" class="me-3 text-secondary" target="_blank">Facebook</a>
+        <a href="https://linkedin.com" class="text-secondary" target="_blank">LinkedIn</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // Smooth scrolling para anclas (tomado del Word)
+    document.addEventListener("DOMContentLoaded", () => {
+      const links = document.querySelectorAll("a[href^='#']");
+      links.forEach(link => {
+        link.addEventListener("click", e => {
+          e.preventDefault();
+          const target = document.querySelector(link.getAttribute("href"));
+          if (target) target.scrollIntoView({ behavior: "smooth" });
+        });
+      });
+    });
+  </script>
+</body>
+</html>
