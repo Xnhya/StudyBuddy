@@ -1,91 +1,79 @@
 package com.service;
 
 import com.model.Recurso;
+import com.repository.RecursoRepository; // <-- CAMBIO
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; // <-- CAMBIO
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Servicio para gestión de recursos en memoria
- * Implementa operaciones CRUD para recursos de estudio
+ * Servicio para gestión de recursos (AHORA CON BASE DE DATOS)
  */
 @Service
+@Transactional(readOnly = true) // <-- CAMBIO
 public class RecursoService {
-    private final List<Recurso> recursos = new ArrayList<>();
-    private final AtomicLong idGenerator = new AtomicLong(1);
+
+    @Autowired
+    private RecursoRepository recursoRepository; // <-- CAMBIO
 
     /**
      * Agregar un nuevo recurso
      */
+    @Transactional
     public synchronized Recurso agregar(Recurso recurso) {
-        if (recurso != null) {
-            recurso.setId(idGenerator.getAndIncrement());
-            recursos.add(recurso);
-            return recurso;
-        }
-        return null;
+        return recursoRepository.save(recurso);
     }
 
     /**
      * Listar todos los recursos
      */
     public synchronized List<Recurso> listar() {
-        return new ArrayList<>(recursos);
+        return recursoRepository.findAll();
     }
 
     /**
      * Buscar recurso por ID
      */
-    public synchronized Recurso buscarPorId(Long id) {
+    public synchronized Recurso buscarPorId(Integer id) { // <-- CAMBIO: Long -> Integer
         if (id == null) return null;
-        return recursos.stream()
-                .filter(r -> r.getId().equals(id))
-                .findFirst()
-                .orElse(null);
+        return recursoRepository.findById(id).orElse(null);
     }
 
     /**
      * Buscar recursos por grupo
      */
-    public synchronized List<Recurso> buscarPorGrupo(Long grupoId) {
-        if (grupoId == null) return new ArrayList<>();
-        return recursos.stream()
-                .filter(r -> r.getGrupoId().equals(grupoId))
-                .toList();
+    public synchronized List<Recurso> buscarPorGrupo(Integer grupoId) { // <-- CAMBIO: Long -> Integer
+        if (grupoId == null) return List.of();
+        // Usamos el método mágico del repositorio
+        return recursoRepository.findByGrupo_Id(grupoId);
     }
 
     /**
      * Buscar recursos por autor
      */
     public synchronized List<Recurso> buscarPorAutor(String autor) {
-        if (autor == null || autor.trim().isEmpty()) return new ArrayList<>();
-        return recursos.stream()
-                .filter(r -> autor.equalsIgnoreCase(r.getAutor()))
-                .toList();
+        if (autor == null || autor.trim().isEmpty()) return List.of();
+        return recursoRepository.findByAutor(autor);
     }
 
     /**
      * Buscar recursos por tipo
      */
     public synchronized List<Recurso> buscarPorTipo(String tipo) {
-        if (tipo == null || tipo.trim().isEmpty()) return new ArrayList<>();
-        return recursos.stream()
-                .filter(r -> tipo.equalsIgnoreCase(r.getTipo()))
-                .toList();
+        if (tipo == null || tipo.trim().isEmpty()) return List.of();
+        return recursoRepository.findByTipo(tipo);
     }
 
     /**
      * Actualizar un recurso existente
      */
+    @Transactional
     public synchronized Recurso actualizar(Recurso recurso) {
         if (recurso != null && recurso.getId() != null) {
-            for (int i = 0; i < recursos.size(); i++) {
-                if (recursos.get(i).getId().equals(recurso.getId())) {
-                    recursos.set(i, recurso);
-                    return recurso;
-                }
+            if (recursoRepository.existsById(recurso.getId())) {
+                return recursoRepository.save(recurso);
             }
         }
         return null;
@@ -94,42 +82,30 @@ public class RecursoService {
     /**
      * Eliminar recurso por ID
      */
-    public synchronized boolean eliminar(Long id) {
+    @Transactional
+    public synchronized boolean eliminar(Integer id) { // <-- CAMBIO: Long -> Integer
         if (id == null) return false;
-        return recursos.removeIf(r -> r.getId().equals(id));
+        if (recursoRepository.existsById(id)) {
+            recursoRepository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 
     /**
      * Eliminar todos los recursos de un grupo
      */
-    public synchronized int eliminarPorGrupo(Long grupoId) {
+    @Transactional
+    public synchronized int eliminarPorGrupo(Integer grupoId) { // <-- CAMBIO: Long -> Integer
         if (grupoId == null) return 0;
-        int initialSize = recursos.size();
-        recursos.removeIf(r -> r.getGrupoId().equals(grupoId));
-        return initialSize - recursos.size();
+        List<Recurso> recursos = recursoRepository.findByGrupo_Id(grupoId);
+        if (!recursos.isEmpty()) {
+            recursoRepository.deleteAll(recursos);
+            return recursos.size();
+        }
+        return 0;
     }
-
-    /**
-     * Contar recursos por tipo
-     */
-    public synchronized long contarPorTipo(String tipo) {
-        if (tipo == null || tipo.trim().isEmpty()) return 0;
-        return recursos.stream()
-                .filter(r -> tipo.equalsIgnoreCase(r.getTipo()))
-                .count();
-    }
-
-    /**
-     * Obtener estadísticas de recursos
-     */
-    public synchronized String obtenerEstadisticas() {
-        long total = recursos.size();
-        long documentos = contarPorTipo("DOCUMENTO");
-        long enlaces = contarPorTipo("ENLACE");
-        long videos = contarPorTipo("VIDEO");
-        long imagenes = contarPorTipo("IMAGEN");
-        
-        return String.format("Total: %d | Documentos: %d | Enlaces: %d | Videos: %d | Imágenes: %d", 
-                total, documentos, enlaces, videos, imagenes);
-    }
+    
+    // ... (Puedes borrar los métodos 'contarPorTipo' y 'obtenerEstadisticas'
+    // o re-implementarlos con 'recursoRepository.count(...)' si los necesitas)
 }

@@ -1,20 +1,25 @@
 package com.service;
 
 import com.model.Sesion;
+import com.repository.SesionRepository; // <-- CAMBIO
+import org.springframework.beans.factory.annotation.Autowired; // <-- CAMBIO
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; // <-- CAMBIO
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class SesionService {
-    private final List<Sesion> sesiones = new ArrayList<>();
+    
+    @Autowired
+    private SesionRepository sesionRepository; // <-- CAMBIO
 
-    public synchronized void add(Sesion s) {
-        sesiones.add(s);
+    @Transactional // <-- CAMBIO
+    public synchronized Sesion add(Sesion s) {
+        return sesionRepository.save(s);
     }
 
     public synchronized List<Sesion> listar() {
-        return new ArrayList<>(sesiones);
+        return sesionRepository.findAll();
     }
 }
