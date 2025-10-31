@@ -1,6 +1,8 @@
 -- ---
 -- Base de Datos: studybuddy_db
+-- (Versión COMPLETA Y CORREGIDA)
 -- ---
+DROP DATABASE IF EXISTS studybuddy_db;
 CREATE DATABASE IF NOT EXISTS studybuddy_db;
 USE studybuddy_db;
 
