@@ -1,0 +1,8 @@
+com\controller\PaginasController.class
+com\model\Sesion.class
+com\model\Usuario.class
+com\service\SesionService.class
+com\service\UsuarioService.class
+com\StudyBuddyApplication.class
+com\model\Grupo.class
+com\service\GrupoService.class
