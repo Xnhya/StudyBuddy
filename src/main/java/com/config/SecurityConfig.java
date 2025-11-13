@@ -1,37 +1,36 @@
 package com.config;
 
+import com.service.DetallesUsuarioService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
-/**
- * Configuración de seguridad para Study Buddy
- * Maneja autenticación en memoria y autorización de rutas
- */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    /**
-     * Configuración del filtro de seguridad HTTP
-     */
+    @Autowired
+    private DetallesUsuarioService detallesUsuarioService;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/", "/landing", "/registrar", "/login", "/test", "/css/**", "/js/**", "/static/**").permitAll()
+                // Permitimos acceso público a los recursos estáticos y páginas de entrada
+                .requestMatchers("/", "/landing", "/register", "/login", "/recuperar-password", "/css/**", "/js/**", "/images/**").permitAll()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
                 .loginPage("/login")
+                .usernameParameter("email") // Le decimos a Spring que el "usuario" es el campo "email"
                 .defaultSuccessUrl("/dashboard", true)
                 .permitAll()
             )
@@ -41,42 +40,32 @@ public class SecurityConfig {
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID")
                 .permitAll()
-            )
-            .csrf(csrf -> csrf.disable()); // Deshabilitado para simplificar la demo
-
+            );
+            
         return http.build();
     }
 
     /**
-     * Servicio de detalles de usuario en memoria
-     * Crea usuarios predefinidos para la demo
+     * Este es el "puente" mágico. Conecta Spring Security con tu base de datos.
      */
     @Bean
-    public UserDetailsService userDetailsService() {
-        UserDetails admin = User.builder()
-                .username("admin@studybuddy.com")
-                .password(passwordEncoder().encode("123456"))
-                .roles("ADMIN")
-                .build();
-
-        UserDetails estudiante1 = User.builder()
-                .username("maria@estudiante.com")
-                .password(passwordEncoder().encode("123456"))
-                .roles("USER")
-                .build();
-
-        UserDetails estudiante2 = User.builder()
-                .username("carlos@estudiante.com")
-                .password(passwordEncoder().encode("123456"))
-                .roles("USER")
-                .build();
-
-        return new InMemoryUserDetailsManager(admin, estudiante1, estudiante2);
+    public DaoAuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        
+        // 1. ¿Quién busca los datos? Tu servicio personalizado
+        authProvider.setUserDetailsService(detallesUsuarioService);
+        
+        // 2. ¿Cómo verificamos la contraseña? Con BCrypt
+        authProvider.setPasswordEncoder(passwordEncoder());
+        
+        return authProvider;
     }
 
-    /**
-     * Codificador de contraseñas BCrypt
-     */
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+        return authConfig.getAuthenticationManager();
+    }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
