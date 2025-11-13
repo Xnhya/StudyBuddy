@@ -25,7 +25,7 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(authz -> authz
                 // Permitimos acceso público a los recursos estáticos y páginas de entrada
-                .requestMatchers("/", "/landing", "/register", "/login", "/recuperar-password", "/css/**", "/js/**", "/images/**").permitAll()
+                .requestMatchers("/", "/landing", "/register", "/login", "/recuperar-password","/recover", "/reset", "/css/**", "/js/**", "/images/**").permitAll()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form

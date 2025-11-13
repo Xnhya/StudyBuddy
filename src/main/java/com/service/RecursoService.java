@@ -11,31 +11,34 @@ import java.util.List;
 
 /**
  * Servicio para gestión de recursos con persistencia en base de datos
- * Implementa operaciones CRUD para recursos de estudio
+ * Actualizado para coincidir con RecursoController
  */
 @Service
 @Transactional
 public class RecursoService {
+
     @Autowired
     private RecursoRepository recursoRepository;
-    
+
     /**
-     * Agregar un nuevo recurso
+     * Guardar un recurso (sirve para CREAR y ACTUALIZAR)
+     * Renombrado de 'agregar' a 'guardar' para coincidir con el controlador
      */
-    public Recurso agregar(Recurso recurso) {
+    public Recurso guardar(Recurso recurso) {
         if (recurso != null) {
             return recursoRepository.save(recurso);
         }
         return null;
     }
-    
+
     /**
      * Listar todos los recursos
+     * Renombrado de 'listar' a 'listarTodos' para coincidir con el controlador
      */
-    public List<Recurso> listar() {
+    public List<Recurso> listarTodos() {
         return recursoRepository.findAll();
     }
-    
+
     /**
      * Buscar recurso por ID
      */
@@ -43,43 +46,7 @@ public class RecursoService {
         if (id == null) return null;
         return recursoRepository.findById(id).orElse(null);
     }
-    
-    /**
-     * Buscar recursos por grupo
-     */
-    public List<Recurso> buscarPorGrupo(Long grupoId) {
-        if (grupoId == null) return new ArrayList<>();
-        return recursoRepository.findByGrupo_Id(grupoId);
-    }
-    
-    /**
-     * Buscar recursos por autor
-     */
-    public List<Recurso> buscarPorAutor(String autor) {
-        if (autor == null || autor.trim().isEmpty()) return new ArrayList<>();
-        return recursoRepository.findByAutor(autor);
-    }
-    
-    /**
-     * Buscar recursos por tipo
-     */
-    public List<Recurso> buscarPorTipo(String tipo) {
-        if (tipo == null || tipo.trim().isEmpty()) return new ArrayList<>();
-        return recursoRepository.findByTipo(tipo);
-    }
-    
-    /**
-     * Actualizar un recurso existente
-     */
-    public Recurso actualizar(Recurso recurso) {
-        if (recurso != null && recurso.getId() != null) {
-            if (recursoRepository.existsById(recurso.getId())) {
-                return recursoRepository.save(recurso);
-            }
-        }
-        return null;
-    }
-    
+
     /**
      * Eliminar recurso por ID
      */
@@ -91,37 +58,29 @@ public class RecursoService {
         }
         return false;
     }
-    
-    /**
-     * Eliminar todos los recursos de un grupo
-     */
-    public int eliminarPorGrupo(Long grupoId) {
-        if (grupoId == null) return 0;
-        List<Recurso> recursos = buscarPorGrupo(grupoId);
-        int cantidad = recursos.size();
-        recursoRepository.deleteAll(recursos);
-        return cantidad;
+
+    // --- MÉTODOS DE BÚSQUEDA ADICIONALES (Útiles para el futuro) ---
+
+    public List<Recurso> buscarPorGrupo(Long grupoId) {
+        if (grupoId == null) return new ArrayList<>();
+        return recursoRepository.findByGrupo_Id(grupoId);
+    }
+
+    public List<Recurso> buscarPorAutor(String autor) {
+        if (autor == null || autor.trim().isEmpty()) return new ArrayList<>();
+        return recursoRepository.findByAutor(autor);
+    }
+
+    public List<Recurso> buscarPorTipo(String tipo) {
+        if (tipo == null || tipo.trim().isEmpty()) return new ArrayList<>();
+        return recursoRepository.findByTipo(tipo);
     }
     
     /**
-     * Contar recursos por tipo
-     */
-    public long contarPorTipo(String tipo) {
-        if (tipo == null || tipo.trim().isEmpty()) return 0;
-        return buscarPorTipo(tipo).size();
-    }
-    
-    /**
-     * Obtener estadísticas de recursos
+     * Obtener estadísticas simples
      */
     public String obtenerEstadisticas() {
-        long total = listar().size();
-        long documentos = contarPorTipo("DOCUMENTO");
-        long enlaces = contarPorTipo("ENLACE");
-        long videos = contarPorTipo("VIDEO");
-        long imagenes = contarPorTipo("IMAGEN");
-        
-        return String.format("Total: %d | Documentos: %d | Enlaces: %d | Videos: %d | Imágenes: %d", 
-                total, documentos, enlaces, videos, imagenes);
+        long total = listarTodos().size();
+        return "Total de recursos: " + total;
     }
 }
