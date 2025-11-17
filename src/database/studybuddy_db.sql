@@ -88,3 +88,17 @@ CREATE TABLE Sesion (
     id_grupo INT,
     FOREIGN KEY (id_grupo) REFERENCES GrupoEstudio(id_grupo) ON DELETE CASCADE
 );
+
+
+
+-- ---
+-- Tabla 9: Usuario_Materia (Tabla Pivote)
+-- (NUEVA TABLA PARA LA RELACIÓN USUARIO <-> MATERIA)
+-- ---
+CREATE TABLE Usuario_Materia (
+    id_usuario INT,
+    id_materia INT,
+    PRIMARY KEY (id_usuario, id_materia),
+    FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario) ON DELETE CASCADE,
+    FOREIGN KEY (id_materia) REFERENCES Materia(id_materia) ON DELETE CASCADE
+);
