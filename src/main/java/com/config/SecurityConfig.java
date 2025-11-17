@@ -23,25 +23,24 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .authorizeHttpRequests(authz -> authz
-                // Permitimos acceso público a los recursos estáticos y páginas de entrada
-                .requestMatchers("/", "/landing", "/register", "/login", "/recuperar-password","/recover", "/reset", "/css/**", "/js/**", "/images/**").permitAll()
-                .anyRequest().authenticated()
-            )
-            .formLogin(form -> form
-                .loginPage("/login")
-                .usernameParameter("email") // Le decimos a Spring que el "usuario" es el campo "email"
-                .defaultSuccessUrl("/dashboard", true)
-                .permitAll()
-            )
-            .logout(logout -> logout
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/")
-                .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID")
-                .permitAll()
-            );
-            
+                .authorizeHttpRequests(authz -> authz
+                        // Permitimos acceso público a los recursos estáticos y páginas de entrada
+                        .requestMatchers("/", "/landing", "/register", "/login", "/recover", "/reset", "/css/**",
+                                "/js/**", "/images/**")
+                        .permitAll()
+                        .anyRequest().authenticated())
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .usernameParameter("email") // Le decimos a Spring que el "usuario" es el campo "email"
+                        .defaultSuccessUrl("/dashboard", true)
+                        .permitAll())
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
+                        .permitAll());
+
         return http.build();
     }
 
@@ -51,13 +50,13 @@ public class SecurityConfig {
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        
+
         // 1. ¿Quién busca los datos? Tu servicio personalizado
         authProvider.setUserDetailsService(detallesUsuarioService);
-        
+
         // 2. ¿Cómo verificamos la contraseña? Con BCrypt
         authProvider.setPasswordEncoder(passwordEncoder());
-        
+
         return authProvider;
     }
 

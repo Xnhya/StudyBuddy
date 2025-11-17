@@ -3,72 +3,79 @@ package com.controller;
 import com.model.Usuario;
 import com.service.EmailService;
 import com.service.UsuarioService;
-import com.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
 import java.time.LocalDateTime;
 
 @Controller
 public class RecuperacionController {
 
-    @Autowired private UsuarioService usuarioService;
-    @Autowired private EmailService emailService;
-    @Autowired private UsuarioRepository usuarioRepository; // Para buscar por token directo
+    @Autowired
+    private UsuarioService usuarioService;
 
-    // 1. Mostrar formulario de "Olvidé mi contraseña"
-    @GetMapping("/recover")
+    @Autowired
+    private EmailService emailService; // El EmailService de studybuddy
+
+    // 1. Muestra el formulario para pedir el email
+    @GetMapping("/recover") // Usamos /recover como en tu demo
     public String mostrarFormularioRecover() {
-        return "recuperar-password"; // Asegúrate de tener este HTML
+        return "recuperar-password"; // El HTML que ya creamos
     }
 
-    // 2. Procesar el correo enviado
+    // 2. Procesa la solicitud de recuperación
+    // (Lógica de ControladorRegistro.java)
     @PostMapping("/recover")
     public String procesarRecover(@RequestParam("email") String email, Model model) {
         Usuario usuario = usuarioService.buscarPorEmail(email);
         
         if (usuario != null) {
-            // Generar token en UsuarioService (ya lo hicimos en el paso anterior)
             String token = usuarioService.generarTokenRecuperacion(usuario);
             
-            // Crear el link (Ajusta el puerto si no es 8083)
-            String link = "http://localhost:8083/reset?token=" + token;
-            
-            emailService.enviarCorreo(email, "Recuperación de Clave - StudyBuddy", 
-                    "Hola " + usuario.getNombre() + ",\n\n" +
-                    "Para restablecer tu contraseña, haz clic aquí:\n" + link);
+            // Usamos el EmailService de studybuddy para enviar el correo
+            // (Adaptado de EmailService.java)
+            String link = "http://localhost:8083/reset?token=" + token; // Puerto de studybuddy
+            emailService.enviarCorreo(
+                email, 
+                "Recuperación de Contraseña - StudyBuddy", 
+                "Hola " + usuario.getNombre() + ",\n\nPara restablecer tu contraseña, haz clic en el enlace:\n" + link
+            );
         }
         
-        // Por seguridad, siempre decimos "si existe, se envió"
-        model.addAttribute("mensaje", "Si el correo existe, recibirás un enlace.");
-        return "login"; 
+        model.addAttribute("mensaje", "Si el correo está registrado, recibirás un enlace.");
+        return "login"; // Redirige a la página de login
     }
 
-    // 3. Validar el token cuando el usuario hace clic en el correo
+    // 3. Muestra la página para poner la nueva clave
+    // (Lógica de ControladorRegistro.java)
     @GetMapping("/reset")
     public String mostrarFormularioReset(@RequestParam("token") String token, Model model) {
-        // NOTA: Necesitas agregar 'findByTokenRecuperacion' en tu UsuarioRepository
-        Usuario usuario = usuarioRepository.findByTokenRecuperacion(token);
-
-        if (usuario == null || usuario.getTokenExpiracion().isBefore(LocalDateTime.now())) {
-            model.addAttribute("error", "El enlace es inválido o ha expirado.");
+        Usuario usuario = usuarioService.buscarPorTokenRecuperacion(token);
+        
+        // Validamos el token Y la expiración (que es la ventaja de nuestro modelo)
+        if (usuario == null || usuario.getTokenExpiracion() == null || usuario.getTokenExpiracion().isBefore(LocalDateTime.now())) {
+            model.addAttribute("error", "El token es inválido o ha expirado.");
             return "login";
         }
-
+        
         model.addAttribute("token", token);
-        return "restablecer-password"; // HTML para poner la nueva clave
+        return "restablecer-password"; // El HTML que ya creamos
     }
 
-    // 4. Guardar la nueva contraseña
+    // 4. Procesa y guarda la nueva clave
+    // (Lógica de ControladorRegistro.java)
     @PostMapping("/reset")
     public String guardarNuevaClave(@RequestParam("token") String token, 
                                     @RequestParam("password") String password) {
-        Usuario usuario = usuarioRepository.findByTokenRecuperacion(token);
         
-        if (usuario != null) {
+        Usuario usuario = usuarioService.buscarPorTokenRecuperacion(token);
+        
+        // Re-validamos por seguridad
+        if (usuario != null && usuario.getTokenExpiracion() != null && usuario.getTokenExpiracion().isAfter(LocalDateTime.now())) {
             usuarioService.actualizarPassword(usuario, password);
         }
         

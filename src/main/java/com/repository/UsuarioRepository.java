@@ -9,7 +9,11 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     Usuario findByEmail(String email);
     Usuario findByNombre(String nombre);
 
-    Usuario findByTokenRecuperacion(String tokenRecuperacion);
+    
+    // --- AGREGAR ESTE MÉTODO ---
+    // (Adaptado de UsuarioRepository.java de tu demo)
+    Usuario findByTokenRecuperacion(String token);
 }
+
 
 

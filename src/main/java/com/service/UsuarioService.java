@@ -5,8 +5,9 @@ import com.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import java.time.LocalDateTime; // Importante para la fecha
-import java.util.UUID; // Para generar el código aleatorio
+
+import java.time.LocalDateTime; // Importante
+import java.util.UUID; // Importante
 
 @Service
 public class UsuarioService {
@@ -17,9 +18,10 @@ public class UsuarioService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    // Método para registrar (este ya lo teníamos)
     public Usuario registrarUsuario(Usuario usuario) {
         String passEncriptada = passwordEncoder.encode(usuario.getPassword());
-        usuario.setPassword(passEncriptada);
+        usuario.setPassword(passEncriptada); // Usa el setter de tu modelo
 
         if (usuario.getRol() == null || usuario.getRol().isEmpty()) {
             usuario.setRol("USER");
@@ -27,39 +29,48 @@ public class UsuarioService {
         return usuarioRepository.save(usuario);
     }
     
+    // Método para buscar por email (este ya lo teníamos)
     public Usuario buscarPorEmail(String email) {
-        return usuarioRepository.findByEmail(email);
+        return usuarioRepository.findByEmail(email); // Asumiendo que tu Repo tiene findByEmail
     }
 
-    // --- NUEVO MÉTODO PARA RECUPERACIÓN ---
+    // --- LÓGICA DE TOKEN ADAPTADA DE TUS NUEVOS ARCHIVOS ---
+
+    /**
+     * Genera un token de recuperación y lo guarda en el usuario.
+     * (Adaptado de UserServicio.java)
+     */
     public String generarTokenRecuperacion(Usuario usuario) {
-        // 1. Generar un token único (ej: "550e8400-e29b...")
         String token = UUID.randomUUID().toString();
         
-        // 2. Guardarlo en el usuario
+        // Usamos los campos de nuestro modelo 'studybuddy'
         usuario.setTokenRecuperacion(token);
+        usuario.setTokenExpiracion(LocalDateTime.now().plusMinutes(15)); // 15 minutos de vida
         
-        // 3. Establecer expiración (15 minutos desde ahora)
-        usuario.setTokenExpiracion(LocalDateTime.now().plusMinutes(15));
-        
-        // 4. Guardar cambios en la BD
         usuarioRepository.save(usuario);
-        
         return token;
     }
-    
-    // --- NUEVO MÉTODO PARA VALIDAR TOKEN Y CAMBIAR PASSWORD ---
-    public Usuario buscarPorToken(String token) {
-        // En un caso real, haríamos esto en el repositorio: findByTokenRecuperacion(token)
-        // Pero podemos hacerlo simple iterando o agregando el método al Repo.
-        // Por ahora, asumamos que agregas esto a UsuarioRepository: Usuario findByTokenRecuperacion(String token);
-        return null; // Ojo: Necesitamos actualizar tu repositorio para esto.
+
+    /**
+     * Busca un usuario por su token de recuperación.
+     * (Adaptado de UserServicio.java)
+     */
+    public Usuario buscarPorTokenRecuperacion(String token) {
+        return usuarioRepository.findByTokenRecuperacion(token);
     }
-    
+
+    /**
+     * Cambia la contraseña del usuario.
+     * (Adaptado de UserServicio.java)
+     */
     public void actualizarPassword(Usuario usuario, String nuevaPassword) {
+        // Encriptamos la nueva clave
         usuario.setPassword(passwordEncoder.encode(nuevaPassword));
-        usuario.setTokenRecuperacion(null); // Borramos el token usado
+        
+        // Limpiamos el token para que no se reutilice
+        usuario.setTokenRecuperacion(null);
         usuario.setTokenExpiracion(null);
+        
         usuarioRepository.save(usuario);
     }
 }
