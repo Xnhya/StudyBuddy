@@ -1,35 +1,35 @@
 package com.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime; // Para la fecha de expiración
+import java.time.LocalDateTime; 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "Usuario") // Debe coincidir con la tabla en MySQL
+@Table(name = "Usuario")
 public class Usuario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_usuario") // Mapeamos a la nueva PK
+    @Column(name = "id_usuario") 
     private Long id;
 
     @Column(nullable = false, length = 100)
     private String nombre;
 
     @Column(nullable = false, length = 100)
-    private String apellido; // ¡Nuevo campo!
+    private String apellido; 
 
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(name = "contraseña", nullable = false, length = 255) // Mapeamos a la columna 'contraseña'
+    @Column(name = "contraseña", nullable = false, length = 255) 
     private String password;
 
     @Column(length = 20)
-    private String rol; // 'ADMIN' o 'USER'
+    private String rol; 
 
-    // Campos para recuperación de contraseña
+    
     @Column(name = "token_recuperacion")
     private String tokenRecuperacion;
 
@@ -41,20 +41,20 @@ public class Usuario {
     private Carrera carrera;
 
     @Column(name = "preferencias")
-    private String preferenciasEstudio; // Ahora es un String simple
+    private String preferenciasEstudio; 
 
     @ManyToMany(mappedBy = "miembros", fetch = FetchType.LAZY)
     private List<Grupo> grupos = new ArrayList<>();
 
+
     @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "usuario_materia", // Nombre de la tabla intermedia en la BD
-            joinColumns = @JoinColumn(name = "id_usuario"), inverseJoinColumns = @JoinColumn(name = "id_materia"))
+    @JoinTable(name = "usuario_materia", joinColumns = @JoinColumn(name = "id_usuario"), inverseJoinColumns = @JoinColumn(name = "id_materia"))
     private List<Materia> materias = new ArrayList<>();
 
     public Usuario() {
     }
 
-    // Constructor auxiliar para pruebas rápidas
+   
     public Usuario(String nombre, String apellido, String email, String password, String rol) {
         this.nombre = nombre;
         this.apellido = apellido;
@@ -62,8 +62,6 @@ public class Usuario {
         this.password = password;
         this.rol = rol;
     }
-
-    // --- Getters y Setters ---
 
     public Long getId() {
         return id;
@@ -152,6 +150,7 @@ public class Usuario {
     public void setGrupos(List<Grupo> grupos) {
         this.grupos = grupos;
     }
+
 
     public List<Materia> getMaterias() {
         return materias;

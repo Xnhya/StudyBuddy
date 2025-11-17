@@ -4,16 +4,15 @@ import com.model.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
-    Usuario findByEmail(String email);
-    Usuario findByNombre(String nombre);
-
     
-    // --- AGREGAR ESTE MÉTODO ---
-    // (Adaptado de UsuarioRepository.java de tu demo)
+    
+    Usuario findByEmail(String email);
+    
+    // --- AÑADIR ESTA LÍNEA ---
+    // (Lógica tomada de tu ejemplo UsuarioRepository.java)
     Usuario findByTokenRecuperacion(String token);
 }
-
-
-

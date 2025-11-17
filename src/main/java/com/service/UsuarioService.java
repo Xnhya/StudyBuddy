@@ -18,50 +18,48 @@ public class UsuarioService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // Método para registrar (este ya lo teníamos)
+    // (Este método de registro ya lo tenías y está perfecto)
     public Usuario registrarUsuario(Usuario usuario) {
         String passEncriptada = passwordEncoder.encode(usuario.getPassword());
-        usuario.setPassword(passEncriptada); // Usa el setter de tu modelo
-
+        usuario.setPassword(passEncriptada);
         if (usuario.getRol() == null || usuario.getRol().isEmpty()) {
             usuario.setRol("USER");
         }
         return usuarioRepository.save(usuario);
     }
     
-    // Método para buscar por email (este ya lo teníamos)
     public Usuario buscarPorEmail(String email) {
-        return usuarioRepository.findByEmail(email); // Asumiendo que tu Repo tiene findByEmail
+        return usuarioRepository.findByEmail(email);
     }
 
-    // --- LÓGICA DE TOKEN ADAPTADA DE TUS NUEVOS ARCHIVOS ---
+    // --- LÓGICA DE TOKEN ADAPTADA DE TUS EJEMPLOS ---
 
     /**
-     * Genera un token de recuperación y lo guarda en el usuario.
-     * (Adaptado de UserServicio.java)
+     * Genera un token y lo guarda en el usuario.
+     * (Lógica de UserServicio.java)
      */
     public String generarTokenRecuperacion(Usuario usuario) {
         String token = UUID.randomUUID().toString();
         
-        // Usamos los campos de nuestro modelo 'studybuddy'
+        // Usamos los campos de TU modelo Usuario (studybuddy)
         usuario.setTokenRecuperacion(token);
-        usuario.setTokenExpiracion(LocalDateTime.now().plusMinutes(15)); // 15 minutos de vida
+        usuario.setTokenExpiracion(LocalDateTime.now().plusMinutes(15)); // 15 min de vida
         
         usuarioRepository.save(usuario);
         return token;
     }
 
     /**
-     * Busca un usuario por su token de recuperación.
-     * (Adaptado de UserServicio.java)
+     * Busca un usuario por su token.
+     * (Lógica de UserServicio.java)
      */
     public Usuario buscarPorTokenRecuperacion(String token) {
         return usuarioRepository.findByTokenRecuperacion(token);
     }
 
     /**
-     * Cambia la contraseña del usuario.
-     * (Adaptado de UserServicio.java)
+     * Cambia la contraseña del usuario y limpia el token.
+     * (Lógica de UserServicio.java)
      */
     public void actualizarPassword(Usuario usuario, String nuevaPassword) {
         // Encriptamos la nueva clave

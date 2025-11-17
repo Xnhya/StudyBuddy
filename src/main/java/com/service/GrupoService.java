@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.Principal; // Asegúrate de importar Principal
 import java.util.List;
 
 /**
@@ -41,12 +42,12 @@ public class GrupoService {
      * Listar grupos usando DTOs para mejor rendimiento
      */
     public List<GrupoListadoDTO> listarDTO() {
-        return grupoRepository.findAllGruposListado();
+        return grupoRepository.findAllGruposListado(); // Asegúrate que este método exista en el Repo
     }
     
     public Grupo buscar(String nombre) {
         if (nombre == null) return null;
-        return grupoRepository.findByNombre(nombre);
+        return grupoRepository.findByNombre(nombre); // Asegúrate que este método exista en el Repo
     }
     
     public Grupo buscarPorId(Long id) {
@@ -54,16 +55,28 @@ public class GrupoService {
         return grupoRepository.findById(id).orElse(null);
     }
     
-    public void unirse(String nombreGrupo, String nombreUsuario) {
+    /**
+     * MÉTODO CORREGIDO
+     * Permite al usuario (logueado) unirse a un grupo usando su Principal (seguridad).
+     */
+    public void unirse(String nombreGrupo, Principal principal) { 
         Grupo grupo = buscar(nombreGrupo);
-        Usuario usuario = usuarioRepository.findByNombre(nombreUsuario);
-        
+
+        // 1. 'principal.getName()' en nuestra app es el EMAIL del usuario
+        String emailUsuarioLogueado = principal.getName(); 
+
+        // 2. CORRECCIÓN: Buscamos al usuario por su EMAIL
+        Usuario usuario = usuarioRepository.findByEmail(emailUsuarioLogueado); 
+
         if (grupo != null && usuario != null) {
-            grupo.addMiembro(usuario);
+            grupo.addMiembro(usuario); // Asumiendo que Grupo.java tiene addMiembro
             grupoRepository.save(grupo);
         }
     }
     
+    /**
+     * Método para unir por ID (menos seguro, usar con precaución, ej: solo para admins)
+     */
     public void unirsePorId(Long idGrupo, Long idUsuario) {
         Grupo grupo = grupoRepository.findById(idGrupo).orElse(null);
         Usuario usuario = usuarioRepository.findById(idUsuario).orElse(null);
