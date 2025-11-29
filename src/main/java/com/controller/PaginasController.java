@@ -1,5 +1,7 @@
 package com.controller;
 
+import com.dto.GrupoListadoDTO;
+import com.model.Materia;
 import com.model.Usuario;
 import com.repository.FacultadRepository;
 import com.repository.CarreraRepository;
@@ -10,7 +12,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @Controller
@@ -142,9 +147,45 @@ public class PaginasController {
     @GetMapping("/graficos")
     public String graficos(Model model) {
         model.addAttribute("active", "graficos");
-        model.addAttribute("grupos", grupoService.listar());
-        model.addAttribute("usuarios", usuarioService.listar());
         model.addAttribute("usuario", usuarioService.obtener());
+
+        // 1. DATOS PARA GRÁFICO DE GRUPOS (Línea)
+        // Usamos listarDTO() porque ya calcula la cantidad de miembros eficientemente
+        List<GrupoListadoDTO> gruposDTO = grupoService.listarDTO();
+        
+        List<String> nombresGrupos = gruposDTO.stream()
+            .map(GrupoListadoDTO::getNombreGrupo)
+            .collect(Collectors.toList());
+            
+        List<Long> cantidadMiembros = gruposDTO.stream()
+            .map(GrupoListadoDTO::getCantidadMiembros)
+            .collect(Collectors.toList());
+
+        // 2. DATOS PARA GRÁFICO DE MATERIAS (Barras)
+        List<Usuario> usuarios = usuarioService.listar();
+        
+        // Aplanamos la lista de materias de todos los usuarios y contamos por nombre
+        Map<String, Long> materiasCount = usuarios.stream()
+            .filter(u -> u.getMaterias() != null)
+            .flatMap(u -> u.getMaterias().stream())
+            .collect(Collectors.groupingBy(Materia::getNombre, Collectors.counting()));
+
+        // 3. DATOS PARA GRÁFICO DE PREFERENCIAS (Pastel)
+        Map<String, Long> preferenciasCount = usuarios.stream()
+            .filter(u -> u.getPreferenciasEstudio() != null)
+            .flatMap(u -> u.getPreferenciasEstudio().stream())
+            .collect(Collectors.groupingBy(p -> p, Collectors.counting()));
+
+        // Enviamos las listas simples a la vista
+        model.addAttribute("nombresGrupos", nombresGrupos);
+        model.addAttribute("dataMiembros", cantidadMiembros);
+        
+        model.addAttribute("materiasLabels", new ArrayList<>(materiasCount.keySet()));
+        model.addAttribute("materiasValues", new ArrayList<>(materiasCount.values()));
+        
+        model.addAttribute("preferenciasLabels", new ArrayList<>(preferenciasCount.keySet()));
+        model.addAttribute("preferenciasValues", new ArrayList<>(preferenciasCount.values()));
+
         return "graficos";
     }
 
