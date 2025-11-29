@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="fragments/header :: header(title='Mi Perfil - StudyBuddy')"></head>
+<body>
+  <div th:replace="fragments/navbar :: navbar(active='perfil', usuario=${usuario})"></div>
+
+  <div class="container mt-4">
+    <!-- Header del perfil -->
+    <div class="profile-card text-center">
+      <div class="row align-items-center">
+        <div class="col-md-3">
+          <i class="fas fa-user-circle fa-5x mb-3"></i>
+        </div>
+        <div class="col-md-9 text-md-start">
+          <h2 th:text="${usuario?.nombre ?: 'Usuario'}">Usuario</h2>
+          <p class="mb-0" th:text="${usuario?.email ?: 'email@ejemplo.com'}">email@ejemplo.com</p>
+          <small class="opacity-75">Miembro desde 2025</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- Información actual -->
+      <div class="col-md-4">
+        <div class="info-card">
+          <h5><i class="fas fa-info-circle me-2"></i>Información Actual</h5>
+          
+          <div th:if="${usuario?.materias != null and !usuario.materias.empty}">
+            <h6>Materias:</h6>
+            <div th:each="materia : ${usuario.materias}">
+              <span class="badge-custom" th:text="${materia}">Materia</span>
+            </div>
+          </div>
+          
+          <div th:if="${usuario?.horarios != null and !usuario.horarios.empty}">
+            <h6 class="mt-3">Horarios:</h6>
+            <div th:each="horario : ${usuario.horarios}">
+              <span class="badge-custom" th:text="${horario}">Horario</span>
+            </div>
+          </div>
+          
+          <div th:if="${usuario?.preferenciasEstudio != null and !usuario.preferenciasEstudio.empty}">
+            <h6 class="mt-3">Preferencias:</h6>
+            <div th:each="preferencia : ${usuario.preferenciasEstudio}">
+              <span class="badge-custom" th:text="${preferencia}">Preferencia</span>
+            </div>
+          </div>
+          
+          <div th:if="${usuario?.materias == null or usuario.materias.empty}">
+            <p class="text-muted">No hay información de perfil disponible.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulario de edición -->
+      <div class="col-md-8">
+        <div class="info-card">
+          <h5><i class="fas fa-edit me-2"></i>Editar Perfil</h5>
+          
+          <form th:action="@{/perfil}" method="post" th:object="${usuarioForm}">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">
+                  <i class="fas fa-user me-2"></i>Nombre completo
+                </label>
+                <input type="text" class="form-control" th:field="*{nombre}" required />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">
+                  <i class="fas fa-envelope me-2"></i>Email
+                </label>
+                <input type="email" class="form-control" th:field="*{email}" required />
+              </div>
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label">
+                <i class="fas fa-lock me-2"></i>Contraseña
+              </label>
+              <input type="password" class="form-control" th:field="*{password}" placeholder="Dejar vacío para mantener la actual" />
+            </div>
+            
+            <!-- Desplegables en cascada: Facultad y Carrera -->
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="facultad" class="form-label">
+                  <i class="fas fa-university me-2"></i>Facultad
+                </label>
+                <select class="form-control" id="facultad" name="idFacultad">
+                  <option value="">Selecciona una facultad</option>
+                  <option th:each="facultad : ${facultades}" 
+                          th:value="${facultad.idFacultad}" 
+                          th:text="${facultad.nombre}"
+                          th:selected="${usuario?.carrera?.facultad?.idFacultad == facultad.idFacultad}">Facultad</option>
+                </select>
+                <small class="text-muted">Cambia tu facultad para actualizar las carreras.</small>
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label for="carrera" class="form-label">
+                  <i class="fas fa-graduation-cap me-2"></i>Carrera
+                </label>
+                <select class="form-control" id="carrera" name="idCarrera" th:disabled="${#lists.isEmpty(facultades)}">
+                  <option value="">Primero selecciona una facultad</option>
+                </select>
+                <small id="carreraAyudaPerfil" class="form-text"></small>
+              </div>
+            </div>
+
+            <!-- Materias -->
+            <div class="mb-3">
+              <label class="form-label">
+                <i class="fas fa-book me-2"></i>Materias que estudias
+              </label>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="Matemáticas" id="matematicas">
+                    <label class="form-check-label" for="matematicas">Matemáticas</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="Cálculo" id="calculo">
+                    <label class="form-check-label" for="calculo">Cálculo</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="Física" id="fisica">
+                    <label class="form-check-label" for="fisica">Física</label>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="Programación" id="programacion">
+                    <label class="form-check-label" for="programacion">Programación</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="Base de Datos" id="bd">
+                    <label class="form-check-label" for="bd">Base de Datos</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="Química" id="quimica">
+                    <label class="form-check-label" for="quimica">Química</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Horarios -->
+            <div class="mb-3">
+              <label class="form-label">
+                <i class="fas fa-clock me-2"></i>Horarios preferidos
+              </label>
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="Mañana" id="manana">
+                    <label class="form-check-label" for="manana">Mañana</label>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="Tarde" id="tarde">
+                    <label class="form-check-label" for="tarde">Tarde</label>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="Noche" id="noche">
+                    <label class="form-check-label" for="noche">Noche</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Preferencias -->
+            <div class="mb-4">
+              <label class="form-label">
+                <i class="fas fa-heart me-2"></i>Preferencias de estudio
+              </label>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="Silencio" id="silencio">
+                    <label class="form-check-label" for="silencio">Ambiente silencioso</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="Música" id="musica">
+                    <label class="form-check-label" for="musica">Con música</label>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="Gamificación" id="gamificacion">
+                    <label class="form-check-label" for="gamificacion">Gamificación</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="Colaborativo" id="colaborativo">
+                    <label class="form-check-label" for="colaborativo">Colaborativo</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="d-grid">
+              <button class="btn btn-success btn-save" type="submit">
+                <i class="fas fa-save me-2"></i>Guardar Cambios
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    // Desplegable en cascada: Facultad -> Carrera
+    document.addEventListener('DOMContentLoaded', function() {
+      const facultadSelect = document.getElementById('facultad');
+      const carreraSelect = document.getElementById('carrera');
+      const usuario = /*[[${usuario}]]*/ null;
+      
+      // Inicializar carreras si ya hay una facultad seleccionada
+      if (usuario && usuario.carrera && usuario.carrera.facultad) {
+        const idFacultad = usuario.carrera.facultad.idFacultad;
+        facultadSelect.value = idFacultad;
+        cargaCarreras(idFacultad, usuario.carrera.idCarrera);
+      }
+      
+      facultadSelect.addEventListener('change', function() {
+        const idFacultad = this.value;
+        if (idFacultad) {
+          carreraSelect.disabled = false;
+          cargaCarreras(idFacultad, null);
+        } else {
+          carreraSelect.disabled = true;
+          carreraSelect.innerHTML = '<option value="">Primero selecciona una facultad</option>';
+        }
+      });
+      
+      function cargaCarreras(idFacultad, idCarreraSeleccionada) {
+        carreraSelect.innerHTML = '<option value="">Cargando...</option>';
+        const ayuda = document.getElementById('carreraAyudaPerfil');
+        if (ayuda) ayuda.textContent = 'Cargando carreras...';
+        carreraSelect.disabled = true;
+        
+        fetch('/api/carreras/' + idFacultad)
+          .then(response => response.json())
+          .then(carreras => {
+            carreraSelect.innerHTML = '<option value="">Selecciona una carrera</option>';
+            carreras.forEach(carrera => {
+              const option = document.createElement('option');
+              option.value = carrera.id;
+              option.textContent = carrera.nombre;
+              if (idCarreraSeleccionada && carrera.id == idCarreraSeleccionada) {
+                option.selected = true;
+              }
+              carreraSelect.appendChild(option);
+            });
+            carreraSelect.disabled = false;
+            if (ayuda) ayuda.textContent = 'Selecciona tu carrera.';
+          })
+          .catch(error => {
+            console.error('Error al cargar carreras:', error);
+            carreraSelect.innerHTML = '<option value="">Error al cargar carreras</option>';
+            carreraSelect.disabled = false;
+            if (ayuda) ayuda.textContent = 'No se pudo cargar, inténtalo de nuevo.';
+          });
+      }
+      
+      // Marcar checkboxes según datos actuales del usuario
+      
+      if (usuario) {
+        // Marcar materias
+        if (usuario.materias) {
+          usuario.materias.forEach(materia => {
+            const checkbox = document.getElementById(materia.toLowerCase().replace(' ', ''));
+            if (checkbox) checkbox.checked = true;
+          });
+        }
+        
+        // Marcar horarios
+        if (usuario.horarios) {
+          usuario.horarios.forEach(horario => {
+            const checkbox = document.getElementById(horario.toLowerCase());
+            if (checkbox) checkbox.checked = true;
+          });
+        }
+        
+        // Marcar preferencias
+        if (usuario.preferenciasEstudio) {
+          usuario.preferenciasEstudio.forEach(preferencia => {
+            const checkbox = document.getElementById(preferencia.toLowerCase());
+            if (checkbox) checkbox.checked = true;
+          });
+        }
+      }
+      
+      // Manejar envío del formulario
+      const form = document.querySelector('form');
+      form.addEventListener('submit', function(e) {
+        // Recopilar datos seleccionados
+        const materias = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+          .filter(cb => ['matematicas', 'calculo', 'fisica', 'programacion', 'bd', 'quimica'].includes(cb.id))
+          .map(cb => cb.value);
+        
+        const horarios = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+          .filter(cb => ['manana', 'tarde', 'noche'].includes(cb.id))
+          .map(cb => cb.value);
+        
+        const preferencias = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+          .filter(cb => ['silencio', 'musica', 'gamificacion', 'colaborativo'].includes(cb.id))
+          .map(cb => cb.value);
+        
+        // Agregar campos ocultos
+        materias.forEach(materia => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'materias';
+          input.value = materia;
+          form.appendChild(input);
+        });
+        
+        horarios.forEach(horario => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'horarios';
+          input.value = horario;
+          form.appendChild(input);
+        });
+        
+        preferencias.forEach(preferencia => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'preferenciasEstudio';
+          input.value = preferencia;
+          form.appendChild(input);
+        });
+      });
+    });
+  </script>
+</body>
+</html>

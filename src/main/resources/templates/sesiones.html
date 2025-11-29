@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="fragments/header :: header(title='Sesiones - StudyBuddy')"></head>
+<body>
+  <div th:replace="fragments/navbar :: navbar(active='sesiones', usuario=${usuario})"></div>
+
+  <div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h2>Calendario / Sesiones</h2>
+        <p class="text-muted">Crea y revisa tus sesiones de estudio.</p>
+      </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm">
+      <div class="card-body">
+        <form th:action="@{/sesiones/crear}" method="post" class="row g-2 align-items-center">
+          <div class="col-md-4">
+            <input name="tema" class="form-control" placeholder="Tema" required />
+          </div>
+          <div class="col-md-3">
+            <input name="fecha" type="date" class="form-control" required />
+          </div>
+          <div class="col-md-3">
+            <input name="hora" type="time" class="form-control" required />
+          </div>
+          <div class="col-md-12 mt-2">
+            <input name="descripcion" class="form-control" placeholder="Descripción (opcional)" />
+          </div>
+          <div class="col-md-2 d-grid mt-2">
+            <button class="btn btn-primary" type="submit">Crear</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div th:if="${sesiones != null && !#lists.isEmpty(sesiones)}">
+      <div class="list-group">
+        <div class="list-group-item flex-column align-items-start" th:each="s : ${sesiones}">
+          <div class="d-flex w-100 justify-content-between">
+            <h5 class="mb-1" th:text="${s.tema}">Tema</h5>
+            <small th:text="${s.fecha} + ' ' + ${s.hora}">Fecha Hora</small>
+          </div>
+          <p class="mb-1"><strong>Grupo:</strong> <span th:text="${s.grupoNombre}">Grupo</span></p>
+          <p class="mb-1"><strong>Creador:</strong> <span th:text="${s.usuarioNombre}">Usuario</span></p>
+          <div class="mt-2" th:if="${usuario != null && usuario.nombre == s.usuarioNombre}">
+            <a class="btn btn-sm btn-outline-secondary me-2" th:href="@{|/sesiones/${s.idSesion}/editar|}">Editar</a>
+            <form th:action="@{|/sesiones/${s.idSesion}/eliminar|}" method="post" class="d-inline" onsubmit="return confirm('¿Eliminar sesión?');">
+              <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div th:if="${sesiones == null || #lists.isEmpty(sesiones)}">
+      <div class="alert alert-info">No hay sesiones programadas.</div>
+    </div>
+  </div>
+</body>
+</html>

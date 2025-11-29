@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="fragments/header :: header(title='Editar Sesión - StudyBuddy')"></head>
+<body>
+  <div th:replace="fragments/navbar :: navbar(active='sesiones', usuario=${usuario})"></div>
+
+  <div class="container mt-4">
+    <h3>Editar Sesión</h3>
+    <form th:action="@{|/sesiones/${sesion.id}/editar|}" th:object="${sesion}" method="post" class="row g-2 mt-2">
+      <div class="col-md-4">
+        <label class="form-label">Tema</label>
+        <input name="tema" class="form-control" th:field="*{tema}" required />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Fecha</label>
+        <input name="fecha" type="date" class="form-control" th:value="${sesion.fecha}" required />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Hora</label>
+        <input name="hora" type="time" class="form-control" th:value="${sesion.hora}" required />
+      </div>
+      <div class="col-md-12 mt-2">
+        <label class="form-label">Descripción</label>
+        <input name="descripcion" class="form-control" th:field="*{descripcion}" />
+      </div>
+      <div class="col-12 d-flex gap-2 mt-2">
+        <button class="btn btn-primary" type="submit">Guardar</button>
+        <a class="btn btn-secondary" th:href="@{/sesiones}">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>
+
+
